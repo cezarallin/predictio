@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle, Users, Calendar, Trophy, CalendarDays } from 'lucide-react';
+import { CheckCircle, Users, Calendar, Trophy, CalendarDays, Trash2, RotateCcw } from 'lucide-react';
 import { format, startOfWeek, addDays } from 'date-fns';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -20,6 +20,7 @@ interface Match {
 interface User {
   id: number;
   name: string;
+  is_admin?: boolean;
 }
 
 interface Prediction {
@@ -39,6 +40,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -59,8 +61,14 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
       ]);
 
       setMatches(matchesData.matches || []);
-      setUsers(usersData.users || []);
+      setUsers(usersData.users || []); // This already excludes admin users
       setPredictions(predictionsData.predictions || []);
+      
+      // Check if current user is admin
+      const allUsers = usersData.allUsers || [];
+      const currentUserData = allUsers.find((u: User) => u.id === currentUser.id);
+      setIsCurrentUserAdmin(currentUserData?.is_admin || false);
+      
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -118,6 +126,62 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     }
   };
 
+  const clearAllPredictions = async () => {
+    if (!confirm('⚠️ Are you sure you want to clear ALL predictions? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/clear-predictions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.name, // API expects name as userId
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`✅ ${data.message}`);
+        loadData();
+      } else {
+        const errorData = await response.json();
+        alert(`❌ Error: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to clear predictions:', error);
+      alert('❌ Failed to clear predictions. Please try again.');
+    }
+  };
+
+  const clearAllResults = async () => {
+    if (!confirm('⚠️ Are you sure you want to clear ALL match results? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/clear-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.name, // API expects name as userId
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`✅ ${data.message}`);
+        loadData();
+      } else {
+        const errorData = await response.json();
+        alert(`❌ Error: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to clear results:', error);
+      alert('❌ Failed to clear results. Please try again.');
+    }
+  };
+
   const getUserPrediction = (matchId: string, userId: number): '1' | 'X' | '2' | null => {
     const prediction = predictions.find(p => p.match_id === matchId && p.user_id === userId);
     return prediction ? prediction.prediction : null;
@@ -158,103 +222,136 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
 
   if (matches.length === 0) {
     return (
-      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-12 text-center">
-        <Trophy className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-        No Matches Available
-      </h3>
-      <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
-        Matches will be loaded before the game period starts. Come back soon to make your predictions!
-      </p>
-        
-        <div className="text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            No matches available yet. Matches will be loaded before game starts!
-          </p>
-        </div>
+      <div className="superbet-card" style={{ padding: '48px', textAlign: 'center' }}>
+        <Trophy style={{ width: '64px', height: '64px', color: 'var(--superbet-red)', margin: '0 auto 16px' }} />
+        <h3 style={{ 
+          fontSize: '24px', 
+          fontWeight: 600, 
+          color: '#1a1a1a', 
+          margin: '0 0 8px 0' 
+        }}>
+          Nu sunt Meciuri Disponibile
+        </h3>
+        <p style={{ 
+          color: 'var(--superbet-gray)', 
+          margin: 0,
+          fontSize: '16px',
+          maxWidth: '600px',
+          marginLeft: 'auto',
+          marginRight: 'auto'
+        }}>
+          Meciurile vor fi încărcate înainte ca perioada de joc să înceapă. Revino în curând pentru a-ți face predicțiile!
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header with stats */}
-      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                Football Predictions
+      <div className="superbet-card" style={{ padding: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Calendar style={{ width: '20px', height: '20px', color: 'var(--superbet-red)' }} />
+              <span style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a' }}>
+                Predicții Fotbal
               </span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <Users className="h-4 w-4" />
-              {users.length} players
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--superbet-gray)', fontSize: '14px' }}>
+              <Users style={{ width: '16px', height: '16px' }} />
+              {users.length} jucători
             </div>
+            {isCurrentUserAdmin && (
+              <div style={{
+                padding: '4px 12px',
+                background: '#fef2f2',
+                color: 'var(--superbet-red)',
+                fontSize: '12px',
+                fontWeight: 600,
+                borderRadius: '16px',
+                border: '1px solid #fecaca'
+              }}>
+                🛡️ ADMIN
+              </div>
+            )}
           </div>
+          
+          {/* Admin buttons - visible only to admin */}
+          {isCurrentUserAdmin && (
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button
+                onClick={clearAllPredictions}
+                className="superbet-outline-button"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <Trash2 style={{ width: '16px', height: '16px' }} />
+                <span className="hidden-mobile-text">Șterge Predicții</span>
+                <span className="show-mobile-text">Șterge P.</span>
+              </button>
+              <button
+                onClick={clearAllResults}
+                className="superbet-button"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <RotateCcw style={{ width: '16px', height: '16px' }} />
+                <span className="hidden-mobile-text">Șterge Rezultate</span>
+                <span className="show-mobile-text">Șterge R.</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
 
       {/* Main prediction table */}
-      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700/50">
+      <div className="superbet-card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="superbet-table">
+            <thead>
               <tr>
-                <th className="px-4 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-600">
-                  Match
-                </th>
-                <th className="px-3 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-600">
-                  1
-                </th>
-                <th className="px-3 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-600">
-                  X
-                </th>
-                <th className="px-3 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-600">
-                  2
-                </th>
+                <th style={{ textAlign: 'left', minWidth: '200px' }}>Meci</th>
+                <th style={{ textAlign: 'center', width: '80px' }}>1</th>
+                <th style={{ textAlign: 'center', width: '80px' }}>X</th>
+                <th style={{ textAlign: 'center', width: '80px' }}>2</th>
                 {users.map(user => (
-                  <th key={user.id} className="px-3 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-600">
-                    {user.name}
+                  <th key={user.id} style={{ textAlign: 'center', minWidth: '80px' }} title={user.name}>
+                    {user.name.length > 8 ? `${user.name.substring(0, 8)}...` : user.name}
                   </th>
                 ))}
-                <th className="px-3 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">
-                  Result
-                </th>
+                <th style={{ textAlign: 'center', width: '100px' }}>Rezultat</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody>
               {matches.map((match) => (
-                <tr key={match.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30">
-                  <td className="px-4 py-4 border-r border-gray-200 dark:border-gray-600">
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                <tr key={match.id}>
+                  <td>
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#1a1a1a', marginBottom: '4px' }}>
                         {match.home_team} vs {match.away_team}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div style={{ fontSize: '12px', color: 'var(--superbet-gray)', marginBottom: '2px' }}>
                         {match.league}
                       </div>
-                      <div className="text-xs text-gray-400 dark:text-gray-500">
-                        {format(new Date(match.match_date), 'MMM dd, HH:mm')}
+                      <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
+                        {format(new Date(match.match_date), 'dd MMM, HH:mm')}
                       </div>
                     </div>
                   </td>
                   
                   {/* Odds columns */}
-                  <td className="px-3 py-4 text-center border-r border-gray-200 dark:border-gray-600">
-                    <span className="text-sm font-mono text-gray-700 dark:text-gray-300">
+                  <td style={{ textAlign: 'center' }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#1a1a1a' }}>
                       {match.odds_1?.toFixed(2) || '-'}
                     </span>
                   </td>
-                  <td className="px-3 py-4 text-center border-r border-gray-200 dark:border-gray-600">
-                    <span className="text-sm font-mono text-gray-700 dark:text-gray-300">
+                  <td style={{ textAlign: 'center' }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#1a1a1a' }}>
                       {match.odds_x?.toFixed(2) || '-'}
                     </span>
                   </td>
-                  <td className="px-3 py-4 text-center border-r border-gray-200 dark:border-gray-600">
-                    <span className="text-sm font-mono text-gray-700 dark:text-gray-300">
+                  <td style={{ textAlign: 'center' }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#1a1a1a' }}>
                       {match.odds_2?.toFixed(2) || '-'}
                     </span>
                   </td>
@@ -262,20 +359,20 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                   {/* User prediction columns */}
                   {users.map(user => {
                     const userPrediction = getUserPrediction(match.id, user.id);
-                    const isCurrentUser = user.id === currentUser.id;
+                    const isCurrentUser = user.id === currentUser.id && !isCurrentUserAdmin; // Admins don't make predictions
                     const colorClass = getPredictionColor(match.id, user.id, userPrediction);
                     const hasExistingPrediction = userPrediction !== null;
                     
                     return (
-                      <td key={user.id} className="px-3 py-4 text-center border-r border-gray-200 dark:border-gray-600">
+                      <td key={user.id} style={{ textAlign: 'center' }}>
                         {isCurrentUser && !match.result && !hasExistingPrediction ? (
-                          // Show prediction buttons only if no prediction exists yet
-                          <div className="flex gap-1 justify-center">
+                          // Show prediction buttons only if no prediction exists yet and user is not admin
+                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                             {(['1', 'X', '2'] as const).map(option => (
                               <button
                                 key={option}
                                 onClick={() => makePrediction(match.id, option)}
-                                className="w-8 h-8 text-xs font-semibold rounded border-2 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400"
+                                className="prediction-btn"
                               >
                                 {option}
                               </button>
@@ -283,14 +380,16 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                           </div>
                         ) : (
                           // Show locked prediction or empty state
-                          <div className="flex items-center justify-center">
-                            <span className={`inline-block w-8 h-8 text-xs font-semibold rounded border-2 leading-7 ${
-                              colorClass || 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                            <span className={`prediction-btn ${
+                              match.result && userPrediction === match.result ? 'correct' :
+                              match.result && userPrediction && userPrediction !== match.result ? 'incorrect' :
+                              userPrediction ? 'selected' : ''
                             }`}>
                               {userPrediction || '-'}
                             </span>
                             {isCurrentUser && hasExistingPrediction && !match.result && (
-                              <span className="ml-2 text-xs text-amber-600 dark:text-amber-400" title="Prediction is locked">
+                              <span style={{ fontSize: '12px' }} title="Predicția este blocată">
                                 🔒
                               </span>
                             )}
@@ -301,19 +400,20 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                   })}
 
                   {/* Result column */}
-                  <td className="px-3 py-4 text-center">
+                  <td style={{ textAlign: 'center' }}>
                     {match.result ? (
-                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-700 dark:text-green-400">
-                        <CheckCircle className="h-4 w-4" />
-                        {match.result}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                        <CheckCircle style={{ width: '16px', height: '16px', color: '#10b981' }} />
+                        <span style={{ fontWeight: 600, color: '#10b981' }}>{match.result}</span>
+                      </div>
                     ) : (
-                      <div className="flex gap-1 justify-center">
+                      <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                         {(['1', 'X', '2'] as const).map(option => (
                           <button
                             key={option}
                             onClick={() => setMatchResult(match.id, option)}
-                            className="w-6 h-6 text-xs font-semibold rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-600 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors duration-200"
+                            className="prediction-btn"
+                            style={{ minWidth: '28px', minHeight: '28px', fontSize: '12px' }}
                           >
                             {option}
                           </button>
@@ -325,24 +425,24 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
               ))}
               
               {/* Totals row */}
-              <tr className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 font-semibold">
-                <td className="px-4 py-4 border-r border-gray-200 dark:border-gray-600">
-                  <div className="flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-yellow-600" />
-                    <span className="text-sm text-gray-900 dark:text-white">Total Score</span>
+              <tr style={{ background: 'var(--superbet-light-gray)', fontWeight: 600 }}>
+                <td>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Trophy style={{ width: '16px', height: '16px', color: 'var(--superbet-red)' }} />
+                    <span style={{ color: '#1a1a1a' }}>Scor Total</span>
                   </div>
                 </td>
-                <td className="px-3 py-4 text-center border-r border-gray-200 dark:border-gray-600"></td>
-                <td className="px-3 py-4 text-center border-r border-gray-200 dark:border-gray-600"></td>
-                <td className="px-3 py-4 text-center border-r border-gray-200 dark:border-gray-600"></td>
+                <td style={{ textAlign: 'center' }}></td>
+                <td style={{ textAlign: 'center' }}></td>
+                <td style={{ textAlign: 'center' }}></td>
                 {users.map(user => (
-                  <td key={user.id} className="px-3 py-4 text-center border-r border-gray-200 dark:border-gray-600">
-                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  <td key={user.id} style={{ textAlign: 'center' }}>
+                    <span style={{ fontWeight: 'bold', color: 'var(--superbet-red)', fontSize: '16px' }}>
                       {calculateUserScore(user.id).toFixed(2)}
                     </span>
                   </td>
                 ))}
-                <td className="px-3 py-4 text-center"></td>
+                <td style={{ textAlign: 'center' }}></td>
               </tr>
             </tbody>
           </table>

@@ -19,7 +19,7 @@
     "odds_1": 2.06,
     "odds_x": 3.46,
     "odds_2": 3.79,
-    "result": "1"
+    "result": "X"
   },
   {
     "id": "odds_81558575b2f353cc938b1f063ab670ac",
@@ -30,7 +30,7 @@
     "odds_1": 1.61,
     "odds_x": 4.01,
     "odds_2": 5.74,
-    "result": null
+    "result": "2"
   },
   {
     "id": "odds_9ab588267a2ab6081c2c37ed83e9bc48",

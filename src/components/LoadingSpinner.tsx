@@ -6,17 +6,55 @@ interface LoadingSpinnerProps {
   message?: string;
 }
 
-export default function LoadingSpinner({ message = 'Loading...' }: LoadingSpinnerProps) {
+export default function LoadingSpinner({ message = 'Se încarcă...' }: LoadingSpinnerProps) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-      <div className="relative">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 dark:border-blue-800"></div>
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent absolute top-0"></div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Trophy className="h-6 w-6 text-yellow-500 animate-pulse" />
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      minHeight: '400px', 
+      gap: '16px',
+      padding: '20px'
+    }}>
+      <div style={{ position: 'relative' }}>
+        <div style={{
+          width: '64px',
+          height: '64px',
+          border: '4px solid #e5e7eb',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}></div>
+        <div style={{
+          width: '64px',
+          height: '64px',
+          border: '4px solid var(--superbet-red)',
+          borderTop: '4px solid transparent',
+          borderRadius: '50%',
+          position: 'absolute',
+          top: 0,
+          animation: 'spin 1s linear infinite'
+        }}></div>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <Trophy style={{ width: '24px', height: '24px', color: 'var(--superbet-red)' }} />
         </div>
       </div>
-      <p className="text-gray-600 dark:text-gray-400 font-medium animate-pulse">
+      <p style={{ 
+        color: '#1a1a1a', 
+        fontWeight: 500,
+        fontSize: '16px',
+        textAlign: 'center',
+        margin: 0
+      }}>
         {message}
       </p>
     </div>

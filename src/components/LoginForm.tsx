@@ -43,67 +43,129 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
   };
 
   return (
-    <div className="w-full max-w-md">
-      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-        <div className="bg-gradient-to-r from-green-500 to-blue-600 p-6">
-          <div className="flex items-center justify-center">
-            <div className="p-3 bg-white/20 rounded-full">
-              <User className="h-8 w-8 text-white" />
-            </div>
+    <div style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
+      <div className="superbet-card" style={{ padding: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{
+            width: '64px',
+            height: '64px',
+            background: 'var(--superbet-red)',
+            borderRadius: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px',
+            boxShadow: '0 4px 6px rgba(220, 38, 38, 0.2)'
+          }}>
+            <User style={{ width: '32px', height: '32px', color: 'white' }} />
           </div>
-          <h2 className="text-2xl font-bold text-white text-center mt-4">
-            Join the Game!
+          <h2 style={{ 
+            fontSize: '28px', 
+            fontWeight: 'bold', 
+            color: '#1a1a1a', 
+            margin: '0 0 8px 0' 
+          }}>
+            Intră în Joc!
           </h2>
-          <p className="text-green-100 text-center mt-2">
-            Enter your name to start predicting
+          <p style={{ 
+            color: 'var(--superbet-gray)', 
+            margin: 0,
+            fontSize: '16px'
+          }}>
+            Introdu numele tău pentru a începe să faci predicții
           </p>
         </div>
 
-        <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Your Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-all duration-200"
-                placeholder="Enter your name..."
-                disabled={isLoading}
-                required
-              />
-            </div>
-
-            {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={!name.trim() || isLoading}
-              className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-              ) : (
-                <>
-                  Start Playing
-                  <ArrowRight className="h-5 w-5" />
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              🏆 Predict match results and compete with friends!
-            </p>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div>
+            <label htmlFor="name" style={{ 
+              display: 'block', 
+              fontSize: '14px', 
+              fontWeight: 600, 
+              color: '#1a1a1a', 
+              marginBottom: '8px' 
+            }}>
+              Numele Tău
+            </label>
+            <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: '1px solid var(--superbet-border)',
+                borderRadius: '8px',
+                fontSize: '16px',
+                color: '#1a1a1a',
+                background: '#ffffff',
+                transition: 'border-color 0.2s ease',
+                outline: 'none'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'var(--superbet-red)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'var(--superbet-border)';
+              }}
+              placeholder="Introdu numele tău..."
+              disabled={isLoading}
+              required
+            />
           </div>
+
+          {error && (
+            <div style={{ 
+              padding: '12px', 
+              background: '#fef2f2', 
+              border: '1px solid #fecaca', 
+              borderRadius: '8px' 
+            }}>
+              <p style={{ fontSize: '14px', color: 'var(--superbet-red)', margin: 0 }}>{error}</p>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={!name.trim() || isLoading}
+            className="superbet-button"
+            style={{ 
+              width: '100%',
+              padding: '14px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              fontSize: '16px'
+            }}
+          >
+            {isLoading ? (
+              <div style={{
+                width: '20px',
+                height: '20px',
+                border: '2px solid white',
+                borderTop: '2px solid transparent',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+            ) : (
+              <>
+                Începe să Joci
+                <ArrowRight style={{ width: '20px', height: '20px' }} />
+              </>
+            )}
+          </button>
+        </form>
+
+        <div style={{ marginTop: '24px', textAlign: 'center' }}>
+          <p style={{ 
+            fontSize: '14px', 
+            color: 'var(--superbet-gray)',
+            margin: 0
+          }}>
+            🏆 Prezice rezultatele meciurilor și concurează cu prietenii!
+          </p>
         </div>
       </div>
     </div>

@@ -86,4 +86,25 @@ export const getPredictionsByUser = db.prepare(`
   WHERE p.user_id = ?
 `);
 
+// Admin operations
+export const makeUserAdmin = db.prepare(`
+  UPDATE users SET is_admin = 1 WHERE name = ?
+`);
+
+export const removeUserAdmin = db.prepare(`
+  UPDATE users SET is_admin = 0 WHERE name = ?
+`);
+
+// Delete all users and predictions
+export const clearAllUsers = db.prepare(`
+  DELETE FROM users
+`);
+
+export const resetDatabase = () => {
+  // Clear all data
+  clearAllUsers.run();
+  clearAllPredictions.run();
+  console.log('🗑️ All users and predictions cleared');
+};
+
 export default db;

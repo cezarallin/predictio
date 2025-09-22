@@ -3,8 +3,10 @@ import { createUser, getUserByName, getAllUsers } from '@/lib/database';
 
 export async function GET() {
   try {
-    const users = getAllUsers.all();
-    return NextResponse.json({ users });
+    const allUsers = getAllUsers.all();
+    // Filter out admin users from the public user list (admins don't participate in predictions)
+    const users = allUsers.filter((user: any) => !user.is_admin);
+    return NextResponse.json({ users, allUsers });
   } catch (error) {
     console.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });

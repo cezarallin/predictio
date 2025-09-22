@@ -9,36 +9,74 @@ interface HeaderProps {
 
 export default function Header({ currentUser, onLogout }: HeaderProps) {
   return (
-    <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-green-500 to-blue-600 rounded-xl shadow-lg">
-            <Trophy className="h-6 w-6 text-white" />
+    <header style={{ 
+      background: '#ffffff', 
+      borderBottom: '1px solid #e5e7eb', 
+      position: 'sticky', 
+      top: 0, 
+      zIndex: 50,
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+    }}>
+      <div style={{ 
+        maxWidth: '1200px', 
+        margin: '0 auto', 
+        padding: '16px 20px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between' 
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            background: 'var(--superbet-red)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 4px rgba(220, 38, 38, 0.2)'
+          }}>
+            <Trophy style={{ width: '20px', height: '20px', color: 'white' }} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+            <h1 style={{ 
+              fontSize: '24px', 
+              fontWeight: 'bold', 
+              color: '#1a1a1a',
+              margin: 0 
+            }}>
               Predictio
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Football Prediction Game
+            <p style={{ 
+              fontSize: '14px', 
+              color: 'var(--superbet-gray)', 
+              margin: 0
+            }} className="hidden-mobile">
+              Joc de Predicții Fotbal
             </p>
           </div>
         </div>
         
         {currentUser && (
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="text-sm text-gray-500 dark:text-gray-400">Welcome,</div>
-              <div className="font-semibold text-gray-900 dark:text-white">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>Bun venit</div>
+              <div style={{ 
+                fontWeight: 600, 
+                color: '#1a1a1a', 
+                fontSize: '14px'
+              }}>
                 {currentUser.name}
               </div>
             </div>
             <button
               onClick={onLogout}
-              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
-              title="Logout"
+              className="superbet-outline-button"
+              title="Ieșire"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut style={{ width: '16px', height: '16px' }} />
+              <span className="hidden-mobile-text">Ieșire</span>
             </button>
           </div>
         )}

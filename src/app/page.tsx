@@ -31,24 +31,51 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+    <div style={{ minHeight: '100vh', background: '#ffffff' }}>
       <Header currentUser={currentUser} onLogout={handleLogout} />
       
-      <main className="container mx-auto px-4 py-8">
-        {!currentUser ? (
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <LoginForm onLogin={handleLogin} />
-          </div>
-        ) : (
-          <PredictionTable currentUser={currentUser} />
-        )}
+      <main style={{ padding: '20px', background: '#f9fafb', minHeight: 'calc(100vh - 140px)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          {!currentUser ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+              <LoginForm onLogin={handleLogin} />
+            </div>
+          ) : (
+            <PredictionTable currentUser={currentUser} />
+          )}
+        </div>
       </main>
       
-      <footer className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 py-6 mt-16">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-600 dark:text-gray-400">
-            🏆 Predictio - Football Prediction Game with Friends
-          </p>
+      <footer style={{ background: '#ffffff', borderTop: '1px solid #e5e7eb', padding: '20px 0' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                background: 'var(--superbet-red)', 
+                borderRadius: '8px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center' 
+              }}>
+                <span style={{ color: 'white', fontWeight: 'bold', fontSize: '14px' }}>P</span>
+              </div>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1a1a1a' }}>
+                  Predictio
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--superbet-gray)' }}>
+                  Inspirat din Superbet
+                </div>
+              </div>
+            </div>
+            <div>
+              <p style={{ fontSize: '14px', color: 'var(--superbet-gray)' }}>
+                🏆 Joc de Predicții Fotbal cu Prietenii
+              </p>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
