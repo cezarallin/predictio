@@ -65,9 +65,6 @@ export default function Home() {
                 <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1a1a1a' }}>
                   Predictio
                 </div>
-                <div style={{ fontSize: '14px', color: 'var(--superbet-gray)' }}>
-                  Inspirat din Superbet
-                </div>
               </div>
             </div>
             <div>

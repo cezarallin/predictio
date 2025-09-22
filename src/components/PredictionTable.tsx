@@ -287,6 +287,22 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     return totalOdds;
   };
 
+  const calculateUserTotalOdds = (userId: number): number => {
+    let totalOdds = 0;
+
+    matches.forEach(match => {
+      const userPrediction = getUserPrediction(match.id, userId);
+      if (userPrediction) {
+        const odds = userPrediction === '1' ? match.odds_1 : 
+                    userPrediction === 'X' ? match.odds_x : 
+                    match.odds_2;
+        totalOdds += odds || 0;
+      }
+    });
+
+    return totalOdds;
+  };
+
   const getCurrentUserRanking = (): { position: number; total: number } => {
     // Calculate scores for all users (including admins for ranking purposes)
     const allUsersWithScores = users.map(user => ({
@@ -307,20 +323,30 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     };
   };
 
+  const getMatchesPlayedInfo = (): { played: number; total: number } => {
+    const playedMatches = matches.filter(match => match.result !== null).length;
+    const totalMatches = matches.length;
+    return { played: playedMatches, total: totalMatches };
+  };
+
   const getLeaderboardData = () => {
     return users.map(user => {
       const score = calculateUserScore(user.id);
+      const totalOdds = calculateUserTotalOdds(user.id);
       
-      // Count correct predictions
+      // Count correct predictions based on played matches only
       let correctPredictions = 0;
-      let totalPredictions = 0;
+      let playedMatchesPredictedBy = 0;
       
       matches.forEach(match => {
-        const userPrediction = getUserPrediction(match.id, user.id);
-        if (userPrediction) {
-          totalPredictions++;
-          if (match.result && userPrediction === match.result) {
-            correctPredictions++;
+        // Only consider matches that have been played (have results)
+        if (match.result) {
+          const userPrediction = getUserPrediction(match.id, user.id);
+          if (userPrediction) {
+            playedMatchesPredictedBy++;
+            if (userPrediction === match.result) {
+              correctPredictions++;
+            }
           }
         }
       });
@@ -329,9 +355,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
         userId: user.id,
         name: user.name,
         score,
+        totalOdds,
         correctPredictions,
-        totalPredictions,
-        accuracy: totalPredictions > 0 ? (correctPredictions / totalPredictions * 100) : 0
+        playedMatchesPredictedBy,
+        accuracy: playedMatchesPredictedBy > 0 ? (correctPredictions / playedMatchesPredictedBy * 100) : 0
       };
     }).sort((a, b) => b.score - a.score);
   };
@@ -398,6 +425,22 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
               <span style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a' }}>
                 Predicții Fotbal
               </span>
+              <div style={{
+                padding: '4px 8px',
+                background: '#f3f4f6',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#6b7280',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                {(() => {
+                  const { played, total } = getMatchesPlayedInfo();
+                  return `${played}/${total} jucate`;
+                })()}
+              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               {/* Player ranking badge */}
@@ -575,8 +618,8 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                 <th style={{ textAlign: 'center', width: '60px' }}>Pos</th>
                 <th style={{ textAlign: 'left', minWidth: '120px' }}>Jucător</th>
                 <th style={{ textAlign: 'center', width: '80px' }}>Scor</th>
+                <th style={{ textAlign: 'center', width: '90px' }}>Cota</th>
                 <th style={{ textAlign: 'center', width: '80px' }}>Corecte</th>
-                <th style={{ textAlign: 'center', width: '80px' }}>Total</th>
                 <th style={{ textAlign: 'center', width: '80px' }}>Acuratețe</th>
               </tr>
             </thead>
@@ -665,15 +708,20 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <span style={{ 
+                        fontFamily: 'monospace', 
+                        fontWeight: 600, 
+                        color: '#1a1a1a',
+                        fontSize: '13px'
+                      }}>
+                        {player.totalOdds.toFixed(2)}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span style={{ 
                         fontWeight: 600, 
                         color: '#10b981' 
                       }}>
                         {player.correctPredictions}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span style={{ color: 'var(--superbet-gray)' }}>
-                        {player.totalPredictions}
                       </span>
                     </td>
                     <td style={{ textAlign: 'center' }}>
@@ -910,8 +958,28 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                           <button
                             key={option}
                             onClick={() => isCurrentUserAdmin ? overrideResult(match.id, option) : setMatchResult(match.id, option)}
-                            className="prediction-btn"
-                            style={{ minWidth: '28px', minHeight: '28px', fontSize: '12px' }}
+                            style={{ 
+                              minWidth: '28px', 
+                              minHeight: '28px', 
+                              fontSize: '12px',
+                              padding: '6px 8px',
+                              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              boxShadow: '0 2px 4px rgba(245, 158, 11, 0.2)'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'translateY(-1px)';
+                              e.currentTarget.style.boxShadow = '0 4px 8px rgba(245, 158, 11, 0.3)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.boxShadow = '0 2px 4px rgba(245, 158, 11, 0.2)';
+                            }}
                           >
                             {option}
                           </button>
@@ -921,27 +989,6 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                   </td>
                 </tr>
               ))}
-              
-              {/* Totals row */}
-              <tr style={{ background: 'var(--superbet-light-gray)', fontWeight: 600 }}>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Trophy style={{ width: '16px', height: '16px', color: 'var(--superbet-red)' }} />
-                    <span style={{ color: '#1a1a1a' }}>Scor Total</span>
-                  </div>
-                </td>
-                <td style={{ textAlign: 'center' }}></td>
-                <td style={{ textAlign: 'center' }}></td>
-                <td style={{ textAlign: 'center' }}></td>
-                {users.map(user => (
-                  <td key={user.id} style={{ textAlign: 'center' }}>
-                    <span style={{ fontWeight: 'bold', color: 'var(--superbet-red)', fontSize: '16px' }}>
-                      {calculateUserScore(user.id).toFixed(2)}
-                    </span>
-                  </td>
-                ))}
-                <td style={{ textAlign: 'center' }}></td>
-              </tr>
             </tbody>
           </table>
         </div>

@@ -101,9 +101,9 @@ html, body {
 }
 
 .prediction-btn.selected {
-  background: var(--superbet-red);
-  color: white;
-  border-color: var(--superbet-red);
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #f59e0b;
 }
 
 .prediction-btn.correct {
