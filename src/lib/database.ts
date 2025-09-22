@@ -24,23 +24,9 @@ function initDatabase() {
     // Column already exists, that's fine
   }
 
-  // Matches table
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS matches (
-      id TEXT PRIMARY KEY,
-      home_team TEXT NOT NULL,
-      away_team TEXT NOT NULL,
-      league TEXT NOT NULL,
-      match_date DATETIME NOT NULL,
-      odds_1 REAL,
-      odds_x REAL,
-      odds_2 REAL,
-      result TEXT, -- '1', 'X', '2', or NULL if not finished
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+  // Matches are now stored in JSON file, not database
 
-  // Predictions table
+  // Predictions table (match_id references JSON file matches)
   db.exec(`
     CREATE TABLE IF NOT EXISTS predictions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,7 +35,6 @@ function initDatabase() {
       prediction TEXT NOT NULL, -- '1', 'X', '2'
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id),
-      FOREIGN KEY (match_id) REFERENCES matches (id),
       UNIQUE(user_id, match_id)
     )
   `);
@@ -73,47 +58,31 @@ export const getAllUsers = db.prepare(`
   SELECT * FROM users ORDER BY created_at
 `);
 
-// Match operations
-export const insertMatch = db.prepare(`
-  INSERT OR REPLACE INTO matches (id, home_team, away_team, league, match_date, odds_1, odds_x, odds_2)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-`);
-
-export const getAllMatches = db.prepare(`
-  SELECT * FROM matches ORDER BY match_date
-`);
-
-export const updateMatchResult = db.prepare(`
-  UPDATE matches SET result = ? WHERE id = ?
-`);
-
-// Clear all matches (for new admin period)
-export const clearAllMatches = db.prepare(`
-  DELETE FROM matches
-`);
-
-// Clear all predictions (for new admin period)
+// Clear all predictions (when needed)
 export const clearAllPredictions = db.prepare(`
   DELETE FROM predictions
 `);
 
 // Prediction operations
 export const insertPrediction = db.prepare(`
-  INSERT OR REPLACE INTO predictions (user_id, match_id, prediction)
+  INSERT INTO predictions (user_id, match_id, prediction)
   VALUES (?, ?, ?)
 `);
 
+// Check if user already has a prediction for a match
+export const getUserPrediction = db.prepare(`
+  SELECT * FROM predictions WHERE user_id = ? AND match_id = ?
+`);
+
 export const getAllPredictions = db.prepare(`
-  SELECT p.*, u.name as user_name, m.home_team, m.away_team
+  SELECT p.*, u.name as user_name
   FROM predictions p
   JOIN users u ON p.user_id = u.id
-  JOIN matches m ON p.match_id = m.id
 `);
 
 export const getPredictionsByUser = db.prepare(`
-  SELECT p.*, m.home_team, m.away_team, m.result, m.odds_1, m.odds_x, m.odds_2
+  SELECT p.*
   FROM predictions p
-  JOIN matches m ON p.match_id = m.id
   WHERE p.user_id = ?
 `);
 

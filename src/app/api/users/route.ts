@@ -27,12 +27,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ user: existingUser });
     }
 
-    // Create new user (admin if name is 'admin')
-    const isAdmin = trimmedName.toLowerCase() === 'admin';
-    const result = createUser.run(trimmedName, isAdmin);
-    const newUser = getUserByName.get(trimmedName);
+    // Create new user
+    console.log('Creating user:', trimmedName);
     
-    return NextResponse.json({ user: newUser });
+    try {
+      const result = createUser.run(trimmedName, 0); // No admin functionality, always 0
+      const newUser = getUserByName.get(trimmedName);
+      
+      return NextResponse.json({ user: newUser });
+    } catch (dbError) {
+      console.error('Database error during user creation:', dbError);
+      throw dbError;
+    }
   } catch (error) {
     console.error('Error creating user:', error);
     return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });

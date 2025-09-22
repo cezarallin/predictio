@@ -31,7 +31,7 @@ interface Prediction {
 }
 
 interface PredictionTableProps {
-  currentUser: { id: number; name: string; is_admin?: boolean };
+  currentUser: { id: number; name: string };
 }
 
 export default function PredictionTable({ currentUser }: PredictionTableProps) {
@@ -39,13 +39,6 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingWeek, setIsLoadingWeek] = useState(false);
-  const [selectedWeekStart, setSelectedWeekStart] = useState<string>(() => {
-    // Default to current week's Monday
-    const now = new Date();
-    const monday = startOfWeek(now, { weekStartsOn: 1 });
-    return format(monday, 'yyyy-MM-dd');
-  });
 
   useEffect(() => {
     loadData();
@@ -75,38 +68,6 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     }
   };
 
-  const loadWeekMatches = async (weekStart: string) => {
-    if (!currentUser.is_admin) return;
-    
-    setIsLoadingWeek(true);
-    try {
-      const response = await fetch('/api/admin/load-week', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          userId: currentUser.name,
-          weekStartDate: weekStart 
-        }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`✅ Admin loaded ${data.matchesFound} matches for week ${data.weekRange.from} to ${data.weekRange.to}`);
-        loadData();
-      }
-    } catch (error) {
-      console.error('Failed to load week matches:', error);
-    } finally {
-      setIsLoadingWeek(false);
-    }
-  };
-
-  const handleWeekChange = (newWeekStart: string) => {
-    setSelectedWeekStart(newWeekStart);
-    if (currentUser.is_admin) {
-      loadWeekMatches(newWeekStart);
-    }
-  };
 
   const makePrediction = async (matchId: string, prediction: '1' | 'X' | '2') => {
     try {
@@ -122,9 +83,18 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
 
       if (response.ok) {
         loadData();
+      } else if (response.status === 409) {
+        // Prediction is locked
+        const errorData = await response.json();
+        alert('⚠️ Prediction is locked! Once you make a prediction, it cannot be changed.');
+        loadData(); // Refresh to show the locked state
+      } else {
+        console.error('Failed to make prediction:', response.status);
+        alert('Failed to make prediction. Please try again.');
       }
     } catch (error) {
       console.error('Failed to make prediction:', error);
+      alert('Failed to make prediction. Please try again.');
     }
   };
 
@@ -190,70 +160,18 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     return (
       <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-12 text-center">
         <Trophy className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          No Real Matches Available
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
-          To load real football matches from September 2025, you need to add API keys. 
-          This app no longer uses mock data - only real matches from live APIs!
-        </p>
+      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        No Matches Available
+      </h3>
+      <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
+        Matches will be loaded before the game period starts. Come back soon to make your predictions!
+      </p>
         
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6 max-w-2xl mx-auto">
-          <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-3">
-            🔑 Get Free API Keys (Takes 2 minutes):
-          </h4>
-          <div className="space-y-2 text-left text-sm text-blue-700 dark:text-blue-300">
-            <div className="flex items-start gap-2">
-              <span className="font-semibold">1.</span>
-              <div>
-                <strong>The Odds API</strong> (500 requests/month free): 
-                <a href="https://the-odds-api.com/" target="_blank" rel="noopener noreferrer" className="underline ml-1">
-                  the-odds-api.com
-                </a>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="font-semibold">2.</span>
-              <div>
-                <strong>API-Sports</strong> (100 requests/day free): 
-                <a href="https://rapidapi.com/api-sports/api/api-football/" target="_blank" rel="noopener noreferrer" className="underline ml-1">
-                  rapidapi.com/api-sports
-                </a>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="font-semibold">3.</span>
-              <div>
-                Add keys to <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">.env.local</code> file in project root
-              </div>
-            </div>
-          </div>
+        <div className="text-center">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            No matches available yet. Matches will be loaded before game starts!
+          </p>
         </div>
-        
-        {currentUser.is_admin && (
-          <div className="flex gap-4 justify-center">
-            <div className="text-center">
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-                Select a week using the date picker above to load matches
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-400">
-                Matches will be loaded from Friday to Monday of the selected week
-              </p>
-            </div>
-          </div>
-        )}
-        
-        {!currentUser.is_admin && (
-          <div className="text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              No matches available. Contact an admin to load matches for this week.
-            </p>
-          </div>
-        )}
-        
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-          This ensures you get actual matches like Dinamo vs Universitatea Craiova, not fake data!
-        </p>
       </div>
     );
   }
@@ -267,43 +185,14 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-blue-600" />
               <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                Football Matches
+                Football Predictions
               </span>
-              {currentUser.is_admin && (
-                <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded-full">
-                  ADMIN
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <Users className="h-4 w-4" />
               {users.length} players
             </div>
           </div>
-          
-          {currentUser.is_admin && (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Week:
-                </label>
-                <input
-                  type="date"
-                  value={selectedWeekStart}
-                  onChange={(e) => handleWeekChange(e.target.value)}
-                  disabled={isLoadingWeek}
-                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
-                />
-                {isLoadingWeek && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-                )}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Friday to Monday
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -375,31 +264,37 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                     const userPrediction = getUserPrediction(match.id, user.id);
                     const isCurrentUser = user.id === currentUser.id;
                     const colorClass = getPredictionColor(match.id, user.id, userPrediction);
+                    const hasExistingPrediction = userPrediction !== null;
                     
                     return (
                       <td key={user.id} className="px-3 py-4 text-center border-r border-gray-200 dark:border-gray-600">
-                        {isCurrentUser && !match.result ? (
+                        {isCurrentUser && !match.result && !hasExistingPrediction ? (
+                          // Show prediction buttons only if no prediction exists yet
                           <div className="flex gap-1 justify-center">
                             {(['1', 'X', '2'] as const).map(option => (
                               <button
                                 key={option}
                                 onClick={() => makePrediction(match.id, option)}
-                                className={`w-8 h-8 text-xs font-semibold rounded border-2 transition-all duration-200 ${
-                                  userPrediction === option
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
-                                }`}
+                                className="w-8 h-8 text-xs font-semibold rounded border-2 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400"
                               >
                                 {option}
                               </button>
                             ))}
                           </div>
                         ) : (
-                          <span className={`inline-block w-8 h-8 text-xs font-semibold rounded border-2 leading-7 ${
-                            colorClass || 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
-                          }`}>
-                            {userPrediction || '-'}
-                          </span>
+                          // Show locked prediction or empty state
+                          <div className="flex items-center justify-center">
+                            <span className={`inline-block w-8 h-8 text-xs font-semibold rounded border-2 leading-7 ${
+                              colorClass || 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
+                            }`}>
+                              {userPrediction || '-'}
+                            </span>
+                            {isCurrentUser && hasExistingPrediction && !match.result && (
+                              <span className="ml-2 text-xs text-amber-600 dark:text-amber-400" title="Prediction is locked">
+                                🔒
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
                     );
