@@ -283,7 +283,7 @@ async function fetchFromAPISportsForWeek(fromDate: string, toDate: string): Prom
           // Log Romanian matches specifically
           if (leagueName === 'Liga 1 (Romania)' && leagueMatches.length > 0) {
             console.log('🇷🇴 Romanian Liga 1 matches found:');
-            leagueMatches.slice(0, 3).forEach((match, i) => {
+            leagueMatches.slice(0, 3).forEach((match: any, i: number) => {
               console.log(`  ${i+1}. ${match.homeTeam} vs ${match.awayTeam} - ${new Date(match.matchDate).toLocaleDateString()}`);
             });
           }

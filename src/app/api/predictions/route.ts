@@ -21,16 +21,16 @@ function combinePredictionsWithMatches(predictions: any[]) {
   const matchMap = new Map(matches.map((match: any) => [match.id, match]));
   
   return predictions.map((prediction: any) => {
-    const match = matchMap.get(prediction.match_id);
+    const match = matchMap.get(prediction.match_id) || {};
     return {
       ...prediction,
-      home_team: match?.home_team || 'Unknown',
-      away_team: match?.away_team || 'Unknown',
-      match_date: match?.match_date,
-      odds_1: match?.odds_1,
-      odds_x: match?.odds_x,
-      odds_2: match?.odds_2,
-      result: match?.result
+      home_team: (match as any)?.home_team || 'Unknown',
+      away_team: (match as any)?.away_team || 'Unknown',
+      match_date: (match as any)?.match_date,
+      odds_1: (match as any)?.odds_1,
+      odds_x: (match as any)?.odds_x,
+      odds_2: (match as any)?.odds_2,
+      result: (match as any)?.result
     };
   });
 }

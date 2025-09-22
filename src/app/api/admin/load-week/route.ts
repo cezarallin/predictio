@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { insertMatch, getAllMatches, getUserByName, clearAllMatches, clearAllPredictions } from '@/lib/database';
+import { getUserByName, clearAllPredictions } from '@/lib/database';
 import { getWeekMatches } from '@/lib/football-api';
 import { format, startOfWeek, addDays } from 'date-fns';
+import { writeFileSync, readFileSync } from 'fs';
+import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,42 +39,50 @@ export async function POST(request: NextRequest) {
     const toDate = format(mondayOfWeek, 'yyyy-MM-dd');
 
     console.log(`📅 NEW PERIOD: ${fromDate} to ${toDate} (Friday to Monday)`);
-    console.log(`🗑️ Clearing previous matches and predictions...`);
+    console.log(`🗑️ Clearing previous predictions...`);
 
-    // Clear all existing matches and predictions (start fresh period)
-    clearAllMatches.run();
+    // Clear all existing predictions (start fresh period)
     clearAllPredictions.run();
     
-    console.log(`✅ Previous period cleared. Making ONE API call for new period...`);
+    console.log(`✅ Previous predictions cleared. Making ONE API call for new period...`);
 
     // Fetch matches for this specific week (ONE TIME ONLY)
     const weekMatches = await getWeekMatches(fromDate, toDate);
 
     if (weekMatches.length > 0) {
-      // Insert matches in database (will persist until admin selects new period)
-      for (const match of weekMatches) {
-        try {
-          insertMatch.run(
-            match.id,
-            match.homeTeam,
-            match.awayTeam,
-            match.league,
-            match.matchDate,
-            match.odds?.home || null,
-            match.odds?.draw || null,
-            match.odds?.away || null
-          );
-        } catch (dbError) {
-          console.warn(`Failed to insert match ${match.homeTeam} vs ${match.awayTeam}:`, dbError);
-        }
-      }
+      // Transform matches to the JSON format
+      const matchesWithOdds = weekMatches.map(match => ({
+        id: match.id,
+        home_team: match.homeTeam,
+        away_team: match.awayTeam,
+        league: match.league,
+        match_date: match.matchDate,
+        odds_1: match.odds?.home || null,
+        odds_x: match.odds?.draw || null,
+        odds_2: match.odds?.away || null,
+        result: null
+      }));
+
+      // Save matches to JSON file
+      const matchesPath = path.join(process.cwd(), 'src', 'data', 'matches.json');
+      writeFileSync(matchesPath, JSON.stringify(matchesWithOdds, null, 2));
+
       console.log(`✅ NEW GAME PERIOD: ${weekMatches.length} matches loaded and saved`);
       console.log(`📊 Users will see these matches until admin selects new period`);
     } else {
       console.log(`⚠️ No matches found for selected period ${fromDate} to ${toDate}`);
     }
 
-    const matches = getAllMatches.all();
+    // Read matches from JSON file to return
+    const matchesPath = path.join(process.cwd(), 'src', 'data', 'matches.json');
+    let matches = [];
+    try {
+      const matchesData = readFileSync(matchesPath, 'utf8');
+      matches = JSON.parse(matchesData);
+    } catch (error) {
+      console.warn('No matches file found or invalid JSON');
+      matches = [];
+    }
     return NextResponse.json({ 
       matches, 
       weekLoaded: true,
