@@ -8,7 +8,7 @@
     "odds_1": 2.21,
     "odds_x": 3.31,
     "odds_2": 3.49,
-    "result": "X"
+    "result": null
   },
   {
     "id": "odds_ba155764b0b2f4bd94e860a70045d15f",
@@ -19,7 +19,7 @@
     "odds_1": 2.06,
     "odds_x": 3.46,
     "odds_2": 3.79,
-    "result": "X"
+    "result": null
   },
   {
     "id": "odds_81558575b2f353cc938b1f063ab670ac",
@@ -30,7 +30,7 @@
     "odds_1": 1.61,
     "odds_x": 4.01,
     "odds_2": 5.74,
-    "result": "2"
+    "result": null
   },
   {
     "id": "odds_9ab588267a2ab6081c2c37ed83e9bc48",

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     console.log('Creating user:', trimmedName);
     
     try {
-      const result = createUser.run(trimmedName, 0); // No admin functionality, always 0
+      createUser.run(trimmedName, 0); // No admin functionality, always 0
       const newUser = getUserByName.get(trimmedName);
       
       return NextResponse.json({ user: newUser });

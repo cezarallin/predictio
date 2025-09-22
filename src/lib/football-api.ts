@@ -494,7 +494,7 @@ export async function testAPIConnections(): Promise<{
       });
       results.oddsAPI = response.status === 200;
       console.log('✅ The Odds API connection: SUCCESS');
-    } catch (error) {
+    } catch {
       console.log('❌ The Odds API connection: FAILED');
     }
   }
@@ -511,7 +511,7 @@ export async function testAPIConnections(): Promise<{
       });
       results.apiSports = response.status === 200;
       console.log('✅ API-Sports connection: SUCCESS');
-    } catch (error) {
+    } catch {
       console.log('❌ API-Sports connection: FAILED');
     }
   }

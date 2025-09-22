@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
       try {
         const result = getUserByName.get(userId);
         resolve(result);
-      } catch (error) {
-        reject(error);
+      } catch (err) {
+        reject(err);
       }
     });
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     try {
       const matchesData = readFileSync(matchesPath, 'utf8');
       matches = JSON.parse(matchesData);
-    } catch (error) {
+    } catch {
       console.warn('No matches file found or invalid JSON');
       matches = [];
     }

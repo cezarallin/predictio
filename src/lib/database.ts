@@ -20,7 +20,7 @@ function initDatabase() {
   try {
     db.exec(`ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE`);
     console.log('Added is_admin column to users table');
-  } catch (error) {
+  } catch {
     // Column already exists, that's fine
   }
 
@@ -98,6 +98,22 @@ export const removeUserAdmin = db.prepare(`
 // Delete all users and predictions
 export const clearAllUsers = db.prepare(`
   DELETE FROM users
+`);
+
+// Admin-specific prediction operations
+export const updatePrediction = db.prepare(`
+  UPDATE predictions SET prediction = ? WHERE user_id = ? AND match_id = ?
+`);
+
+export const deletePrediction = db.prepare(`
+  DELETE FROM predictions WHERE user_id = ? AND match_id = ?
+`);
+
+export const upsertPrediction = db.prepare(`
+  INSERT INTO predictions (user_id, match_id, prediction)
+  VALUES (?, ?, ?)
+  ON CONFLICT(user_id, match_id) DO UPDATE SET
+    prediction = excluded.prediction
 `);
 
 export const resetDatabase = () => {

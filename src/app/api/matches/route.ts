@@ -7,7 +7,13 @@ export async function GET() {
     const matchesPath = path.join(process.cwd(), 'src', 'data', 'matches.json');
     const matchesData = readFileSync(matchesPath, 'utf8');
     const matches = JSON.parse(matchesData);
-    return NextResponse.json({ matches });
+    
+    // Sort matches by date (ascending - earliest first)
+    const sortedMatches = matches.sort((a: any, b: any) => {
+      return new Date(a.match_date).getTime() - new Date(b.match_date).getTime();
+    });
+    
+    return NextResponse.json({ matches: sortedMatches });
   } catch (error) {
     console.error('Error fetching matches:', error);
     return NextResponse.json({ matches: [] }); // Return empty array if no matches file

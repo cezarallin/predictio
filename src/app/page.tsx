@@ -14,7 +14,7 @@ export default function Home() {
     if (storedUser) {
       try {
         setCurrentUser(JSON.parse(storedUser));
-      } catch (error) {
+      } catch {
         localStorage.removeItem('predictio_user');
       }
     }
