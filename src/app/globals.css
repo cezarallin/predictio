@@ -218,3 +218,15 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--superbet-red-hover);
 }
+
+/* Floating button animations */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

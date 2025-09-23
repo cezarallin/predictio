@@ -39,8 +39,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [localPredictions, setLocalPredictions] = useState<Record<string, '1' | 'X' | '2'>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -76,31 +78,42 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     loadData();
   }, [loadData]);
 
-  const makePrediction = async (matchId: string, prediction: '1' | 'X' | '2') => {
+  const makePrediction = (matchId: string, prediction: '1' | 'X' | '2') => {
+    setLocalPredictions(prev => ({
+      ...prev,
+      [matchId]: prediction
+    }));
+  };
+
+  const submitAllPredictions = async () => {
+    if (Object.keys(localPredictions).length === 0) {
+      alert('Nu ai nicio predicție de trimis!');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      const response = await fetch('/api/predictions', {
+      const response = await fetch('/api/predictions/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser.id,
-          matchId,
-          prediction,
+          predictions: localPredictions
         }),
       });
 
       if (response.ok) {
+        setLocalPredictions({});
         loadData();
-      } else if (response.status === 409) {
-        // Prediction is locked
-        alert('⚠️ Prediction is locked! Once you make a prediction, it cannot be changed.');
-        loadData(); // Refresh to show the locked state
       } else {
-        console.error('Failed to make prediction:', response.status);
-        alert('Failed to make prediction. Please try again.');
+        const errorData = await response.json();
+        alert(`❌ Eroare: ${errorData.error}`);
       }
     } catch (error) {
-      console.error('Failed to make prediction:', error);
-      alert('Failed to make prediction. Please try again.');
+      console.error('Failed to submit predictions:', error);
+      alert('❌ Nu s-au putut trimite predicțiile. Încearcă din nou.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -265,8 +278,18 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
   };
 
   const getUserPrediction = (matchId: string, userId: number): '1' | 'X' | '2' | null => {
+    // For current user, check local predictions first if they exist
+    if (userId === currentUser.id && localPredictions[matchId]) {
+      return localPredictions[matchId];
+    }
+    
     const prediction = predictions.find(p => p.match_id === matchId && p.user_id === userId);
     return prediction ? prediction.prediction : null;
+  };
+
+  const hasUserSubmittedPrediction = (matchId: string, userId: number): boolean => {
+    const prediction = predictions.find(p => p.match_id === matchId && p.user_id === userId);
+    return prediction !== undefined;
   };
 
   const calculateUserScore = (userId: number): number => {
@@ -556,49 +579,90 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
         </div>
       </div>
 
-      {/* Prediction Status Banner - only show for non-admin users */}
+      {/* Prediction Status Banners - only show for non-admin users */}
       {!isCurrentUserAdmin && (() => {
         const predictionStatus = hasCurrentUserCompletedAllPredictions();
-        return !predictionStatus.completed ? (
-          <div className="superbet-card" style={{ 
-            padding: '16px 20px', 
-            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-            border: '1px solid #f59e0b',
-            borderRadius: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
+        const localPredictionsCount = Object.keys(localPredictions).length;
+        
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Local predictions banner */}
+            {localPredictionsCount > 0 && (
+              <div className="superbet-card" style={{ 
+                padding: '16px 20px', 
+                background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                border: '1px solid #3b82f6',
+                borderRadius: '12px'
               }}>
-                <EyeOff style={{ width: '20px', height: '20px', color: 'white' }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ 
-                  fontSize: '16px', 
-                  fontWeight: 600, 
-                  color: '#92400e',
-                  marginBottom: '4px'
-                }}>
-                  Predicțiile altor jucători sunt ascunse
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '20px',
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <span style={{ fontSize: '20px' }}>📝</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ 
+                      fontSize: '16px', 
+                      fontWeight: 600, 
+                      color: '#1e40af'
+                    }}>
+                      Ai {localPredictionsCount} predicții locale netrimise
+                    </div>
+                  </div>
                 </div>
-                <div style={{ 
-                  fontSize: '14px', 
-                  color: '#b45309',
-                  lineHeight: 1.4
-                }}>
-                  Completează toate predicțiile tale ({predictionStatus.missing} rămase din {predictionStatus.total}) pentru a vedea predicțiile celorlalți jucători.
+              </div>
+            )}
+            
+            {/* Hidden predictions banner */}
+            {!predictionStatus.completed && (
+              <div className="superbet-card" style={{ 
+                padding: '16px 20px', 
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                border: '1px solid #f59e0b',
+                borderRadius: '12px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '20px',
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <EyeOff style={{ width: '20px', height: '20px', color: 'white' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ 
+                      fontSize: '16px', 
+                      fontWeight: 600, 
+                      color: '#92400e',
+                      marginBottom: '4px'
+                    }}>
+                      Predicțiile altor jucători sunt ascunse
+                    </div>
+                    <div style={{ 
+                      fontSize: '14px', 
+                      color: '#b45309',
+                      lineHeight: 1.4
+                    }}>
+                      Trimite toate predicțiile tale ({predictionStatus.missing} rămase din {predictionStatus.total}) pentru a vedea predicțiile celorlalți jucători.
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
-        ) : null;
+        );
       })()}
 
       {/* Leaderboard Table - Always visible */}
@@ -803,7 +867,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                   {users.map(user => {
                     const userPrediction = getUserPrediction(match.id, user.id);
                     const isCurrentUser = user.id === currentUser.id && !isCurrentUserAdmin; // Admins don't make predictions
-                    const hasExistingPrediction = userPrediction !== null;
+                    const hasSubmittedPrediction = hasUserSubmittedPrediction(match.id, user.id);
                     
                     // Check if predictions should be hidden
                     const predictionStatus = hasCurrentUserCompletedAllPredictions();
@@ -811,14 +875,21 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                     
                     return (
                       <td key={user.id} style={{ textAlign: 'center' }}>
-                        {isCurrentUser && !match.result && !hasExistingPrediction ? (
-                          // Show prediction buttons only if no prediction exists yet and user is not admin
+                        {isCurrentUser && !match.result && !hasSubmittedPrediction ? (
+                          // Show prediction buttons for current user if match has no result and no submitted prediction
                           <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                             {(['1', 'X', '2'] as const).map(option => (
                               <button
                                 key={option}
                                 onClick={() => makePrediction(match.id, option)}
-                                className="prediction-btn"
+                                className={`prediction-btn ${userPrediction === option ? 'selected' : ''}`}
+                                style={userPrediction === option ? {
+                                  background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                                  color: 'white',
+                                  border: '2px solid #d97706',
+                                  fontWeight: '700',
+                                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+                                } : {}}
                               >
                                 {option}
                               </button>
@@ -836,7 +907,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                             </span>
                           </div>
                         ) : (
-                          // Show locked prediction or admin controls
+                          // Show submitted prediction or admin controls
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                             <span className={`prediction-btn ${
                               match.result && userPrediction === match.result ? 'correct' :
@@ -845,8 +916,8 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                             }`}>
                               {userPrediction || '-'}
                             </span>
-                            {isCurrentUser && hasExistingPrediction && !match.result && (
-                              <span style={{ fontSize: '12px' }} title="Predicția este blocată">
+                            {isCurrentUser && hasSubmittedPrediction && !match.result && (
+                              <span style={{ fontSize: '12px' }} title="Predicția a fost trimisă și este blocată">
                                 🔒
                               </span>
                             )}
@@ -874,7 +945,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                                       {option}
                                     </button>
                                   ))}
-                                  {hasExistingPrediction && (
+                                  {hasSubmittedPrediction && (
                                     <button
                                       onClick={() => overridePrediction(user.id, match.id, null)}
                                       className="admin-mini-btn"
@@ -993,6 +1064,60 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
           </table>
         </div>
       </div>
+
+      {/* Floating Submit Button - visible when user has local predictions */}
+      {!isCurrentUserAdmin && Object.keys(localPredictions).length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          animation: 'slideInUp 0.3s ease-out'
+        }}>
+          <button
+            onClick={submitAllPredictions}
+            disabled={isSubmitting}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 20px',
+              background: isSubmitting 
+                ? 'linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%)'
+                : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '50px',
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 8px 32px rgba(16, 185, 129, 0.4)',
+              minWidth: 'fit-content',
+              maxWidth: '90vw',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => {
+              if (!isSubmitting) {
+                e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                e.currentTarget.style.boxShadow = '0 12px 40px rgba(16, 185, 129, 0.6)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSubmitting) {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = '0 8px 32px rgba(16, 185, 129, 0.4)';
+              }
+            }}
+          >
+            <CheckCircle style={{ width: '16px', height: '16px' }} />
+            <span style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+              {isSubmitting ? 'Se trimite...' : `Trimite Predicțiile (${Object.keys(localPredictions).length})`}
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
