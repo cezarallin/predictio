@@ -390,18 +390,19 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     // Get matches without results (available for predictions)
     const availableMatches = matches.filter(match => !match.result);
     
-    // Count how many of these matches the current user has predicted
-    let predictedCount = 0;
+    // Count how many of these matches the current user has SUBMITTED (not local)
+    let submittedCount = 0;
     availableMatches.forEach(match => {
-      const userPrediction = getUserPrediction(match.id, currentUser.id);
-      if (userPrediction) {
-        predictedCount++;
+      // Only count predictions that are actually submitted to the server
+      const hasSubmitted = hasUserSubmittedPrediction(match.id, currentUser.id);
+      if (hasSubmitted) {
+        submittedCount++;
       }
     });
 
     return {
-      completed: predictedCount === availableMatches.length,
-      missing: availableMatches.length - predictedCount,
+      completed: submittedCount === availableMatches.length,
+      missing: availableMatches.length - submittedCount,
       total: availableMatches.length
     };
   };
