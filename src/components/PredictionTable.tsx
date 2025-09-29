@@ -886,7 +886,6 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                   };
                 };
                 
-                const medalStyle = getMedalStyle(position);
                 
                 return (
                   <tr key={player.userId} style={{ 
@@ -1021,7 +1020,6 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
             </thead>
             <tbody>
               {matches.map((match) => {
-                const isCurrentUserBoostMatch = !isCurrentUserAdmin && getCurrentUserBoostMatch() === match.id;
                 const predictionStatus = hasCurrentUserCompletedAllPredictions();
                 const canBoostThisMatch = !isCurrentUserAdmin && predictionStatus.completed && !match.result && !getCurrentUserBoostMatch();
                 
@@ -1418,7 +1416,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                             key={option}
                             onClick={(e) => {
               e.stopPropagation();
-              isCurrentUserAdmin ? overrideResult(match.id, option) : setMatchResult(match.id, option);
+              void (isCurrentUserAdmin ? overrideResult(match.id, option) : setMatchResult(match.id, option));
             }}
                             style={{ 
                               minWidth: '28px', 

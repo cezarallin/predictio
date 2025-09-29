@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         setTheme(systemPrefersDark ? 'dark' : 'light');
       }
-    } catch (error) {
+    } catch {
       // Fallback for SSR or when localStorage is not available
       setTheme('light');
     }

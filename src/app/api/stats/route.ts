@@ -58,47 +58,47 @@ const HISTORICAL_DATA = {
   },
   week2: {
     name: "Săptămâna 2 (Sep 23-29)",
-    totalMatches: 50, // estimare bazată pe numărul de predicții
+    totalMatches: 56, // calculat din datele din a doua imagine
     players: {
       "Andrei Tone": {
         rank: 1,
-        points: 55.05,
+        points: 60.72,
         odds: 202.22,
-        correct: 17,
+        correct: 19,
         accuracy: 34,
-        total: 50
-      },
-      "Tony": {
-        rank: 2,
-        points: 43.68,
-        odds: 155.06,
-        correct: 17,
-        accuracy: 38,
-        total: 50
+        total: 56
       },
       "mihai94": {
-        rank: 3,
-        points: 42.72,
+        rank: 2,
+        points: 51.95,
         odds: 140.72,
-        correct: 19,
-        accuracy: 38,
-        total: 50
+        correct: 23,
+        accuracy: 41,
+        total: 56
+      },
+      "Tony": {
+        rank: 3,
+        points: 51.17,
+        odds: 155.06,
+        correct: 20,
+        accuracy: 39,
+        total: 56
       },
       "Dew": {
         rank: 4,
-        points: 39.24,
+        points: 47.49,
         odds: 131.48,
-        correct: 18,
-        accuracy: 36,
-        total: 50
+        correct: 22,
+        accuracy: 39,
+        total: 56
       },
       "Cezar": {
         rank: 5,
-        points: 36.85,
+        points: 44.34,
         odds: 159.92,
-        correct: 15,
-        accuracy: 30,
-        total: 50
+        correct: 18,
+        accuracy: 32,
+        total: 56
       }
     }
   }
@@ -120,7 +120,7 @@ function calculatePlayerStats() {
     let totalPredictions = 0;
     let correctPredictions = 0;
     let totalPoints = 0;
-    let weeklyRanks: number[] = [];
+    const weeklyRanks: number[] = [];
     
     if (week1Data) {
       totalPredictions += week1Data.total;

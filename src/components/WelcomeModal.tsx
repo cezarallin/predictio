@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { X, Zap, Heart, Trophy, Sparkles, BarChart3, Moon } from 'lucide-react';
 
 interface WelcomeModalProps {
@@ -247,7 +247,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
                 margin: 0
               }}>
                 Vezi <strong>clasamentul complet</strong>, performanțele săptămânale și statistici detaliate! 
-                Cine e cel mai bun predictor? Click pe <strong>"Stats"</strong> din header! 📈
+                Cine e cel mai bun predictor? Click pe <strong>&ldquo;Stats&rdquo;</strong> din header! 📈
               </p>
             </div>
           </div>

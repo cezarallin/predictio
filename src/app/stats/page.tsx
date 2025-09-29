@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Trophy, Target, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
-import { format } from 'date-fns';
-import { ro } from 'date-fns/locale';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Header from '@/components/Header';
 
@@ -69,7 +67,6 @@ export default function StatsPage() {
   const [currentUser, setCurrentUser] = useState<{id: number, name: string} | null>(null);
   const [statsData, setStatsData] = useState<StatsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedWeek, setSelectedWeek] = useState<string>('all');
 
   useEffect(() => {
     // Check for stored user in localStorage
@@ -304,7 +301,7 @@ export default function StatsPage() {
                 </tr>
               </thead>
               <tbody>
-                {statsData.playerStats.map((player, index) => {
+                {statsData.playerStats.map((player) => {
                   const rankBadge = getRankBadge(player.rank);
                   const isCurrentUser = player.name === currentUser.name;
                   
