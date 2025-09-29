@@ -108,8 +108,8 @@ function calculatePlayerStats() {
   const players = ["Tony", "mihai94", "Andrei Tone", "Cezar", "Dew", "Flo"];
   
   return players.map(playerName => {
-    const week1Data = HISTORICAL_DATA.week1.players[playerName];
-    const week2Data = HISTORICAL_DATA.week2.players[playerName];
+    const week1Data = HISTORICAL_DATA.week1.players[playerName as keyof typeof HISTORICAL_DATA.week1.players];
+    const week2Data = HISTORICAL_DATA.week2.players[playerName as keyof typeof HISTORICAL_DATA.week2.players];
     
     // Calculez câte săptămâni a jucat
     let weeksPlayed = 0;
@@ -295,8 +295,8 @@ function calculateHeadToHead(playerStats: any[]) {
       // Compar performanțele săptămânale
       const weeks = [HISTORICAL_DATA.week1, HISTORICAL_DATA.week2];
       weeks.forEach(week => {
-        const p1Data = week.players[p1.name];
-        const p2Data = week.players[p2.name];
+        const p1Data = week.players[p1.name as keyof typeof week.players];
+        const p2Data = week.players[p2.name as keyof typeof week.players];
         
         if (p1Data && p2Data) {
           if (p1Data.accuracy > p2Data.accuracy) p1Wins++;

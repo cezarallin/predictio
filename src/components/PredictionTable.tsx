@@ -862,29 +862,6 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                 const position = index + 1;
                 const isCurrentUser = player.userId === currentUser.id;
                 
-                // Medal colors based on position
-                const getMedalStyle = (pos: number) => {
-                  if (pos === 1) return {
-                    background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)', // Gold
-                    color: 'white',
-                    boxShadow: '0 2px 6px rgba(255, 215, 0, 0.3)'
-                  };
-                  if (pos === 2) return {
-                    background: 'linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%)', // Silver
-                    color: 'white',
-                    boxShadow: '0 2px 6px rgba(192, 192, 192, 0.3)'
-                  };
-                  if (pos === 3) return {
-                    background: 'linear-gradient(135deg, #CD7F32 0%, #B87333 100%)', // Bronze
-                    color: 'white',
-                    boxShadow: '0 2px 6px rgba(205, 127, 50, 0.3)'
-                  };
-                  return {
-                    background: 'linear-gradient(135deg, #475569 0%, #334155 100%)', // Dark Slate
-                    color: 'white',
-                    boxShadow: '0 1px 3px rgba(71, 85, 105, 0.3)'
-                  };
-                };
                 
                 
                 return (
