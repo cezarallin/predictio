@@ -7,12 +7,13 @@
 }
 
 html, body {
-  background: #ffffff !important;
-  color: #1a1a1a !important;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   font-weight: 400;
   line-height: 1.5;
   min-height: 100vh;
+  background: var(--superbet-bg);
+  color: var(--superbet-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 :root {
@@ -23,22 +24,32 @@ html, body {
   --superbet-gray: #6b7280;
   --superbet-light-gray: #f9fafb;
   --superbet-border: #e5e7eb;
+  --superbet-card-bg: #ffffff;
+  --superbet-table-hover: #f9fafb;
+  --superbet-input-bg: #ffffff;
 }
 
-/* Force override any dark mode */
-@media (prefers-color-scheme: dark) {
-  html, body {
-    background: #ffffff !important;
-    color: #1a1a1a !important;
-  }
+/* Dark theme variables */
+.dark {
+  --superbet-red: #ef4444;
+  --superbet-red-hover: #dc2626;
+  --superbet-bg: #111827;
+  --superbet-text: #f9fafb;
+  --superbet-gray: #9ca3af;
+  --superbet-light-gray: #1f2937;
+  --superbet-border: #374151;
+  --superbet-card-bg: #1f2937;
+  --superbet-table-hover: #374151;
+  --superbet-input-bg: #1f2937;
 }
 
 /* Superbet-style components */
 .superbet-card {
-  background: #ffffff;
+  background: var(--superbet-card-bg);
   border: 1px solid var(--superbet-border);
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .superbet-button {
@@ -80,8 +91,8 @@ html, body {
 }
 
 .prediction-btn {
-  background: white;
-  color: #1a1a1a;
+  background: var(--superbet-input-bg);
+  color: var(--superbet-text);
   border: 1px solid var(--superbet-border);
   border-radius: 4px;
   font-weight: 600;
@@ -92,7 +103,7 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .prediction-btn:hover {
@@ -120,29 +131,33 @@ html, body {
 
 .superbet-table {
   width: 100%;
-  background: white;
+  background: var(--superbet-card-bg);
   border-collapse: collapse;
+  transition: background-color 0.3s ease;
 }
 
 .superbet-table th {
   background: var(--superbet-light-gray);
-  color: #1a1a1a;
+  color: var(--superbet-text);
   font-weight: 600;
   font-size: 14px;
   padding: 12px 8px;
   text-align: left;
   border-bottom: 1px solid var(--superbet-border);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .superbet-table td {
   padding: 12px 8px;
   border-bottom: 1px solid var(--superbet-border);
-  color: #1a1a1a;
+  color: var(--superbet-text);
   font-size: 14px;
+  transition: color 0.3s ease;
 }
 
 .superbet-table tbody tr:hover {
-  background: #f9fafb;
+  background: var(--superbet-table-hover);
+  transition: background-color 0.3s ease;
 }
 
 /* Animations */
@@ -183,6 +198,94 @@ html, body {
   .superbet-table td {
     padding: 8px 4px;
     font-size: 12px;
+  }
+  
+  /* Specific styling for clasament table on mobile */
+  .clasament-table th,
+  .clasament-table td {
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+  
+  .clasament-table th:first-child,
+  .clasament-table td:first-child {
+    width: 40px;
+    min-width: 40px;
+  }
+  
+  .clasament-table th:nth-child(2),
+  .clasament-table td:nth-child(2) {
+    width: 80px;
+    min-width: 80px;
+  }
+  
+  .clasament-table th:nth-child(3),
+  .clasament-table td:nth-child(3) {
+    width: 50px;
+    min-width: 50px;
+  }
+  
+  .clasament-table th:nth-child(4),
+  .clasament-table td:nth-child(4) {
+    width: 55px;
+    min-width: 55px;
+  }
+  
+  .clasament-table th:nth-child(5),
+  .clasament-table td:nth-child(5) {
+    width: 50px;
+    min-width: 50px;
+  }
+  
+  .clasament-table th:nth-child(6),
+  .clasament-table td:nth-child(6) {
+    width: 60px;
+    min-width: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Even smaller for very small phones */
+  .clasament-table th,
+  .clasament-table td {
+    padding: 4px 1px;
+    font-size: 10px;
+  }
+  
+  .clasament-table th:first-child,
+  .clasament-table td:first-child {
+    width: 35px;
+    min-width: 35px;
+  }
+  
+  .clasament-table th:nth-child(2),
+  .clasament-table td:nth-child(2) {
+    width: 70px;
+    min-width: 70px;
+  }
+  
+  .clasament-table th:nth-child(3),
+  .clasament-table td:nth-child(3) {
+    width: 45px;
+    min-width: 45px;
+  }
+  
+  .clasament-table th:nth-child(4),
+  .clasament-table td:nth-child(4) {
+    width: 45px;
+    min-width: 45px;
+  }
+  
+  .clasament-table th:nth-child(5),
+  .clasament-table td:nth-child(5) {
+    width: 40px;
+    min-width: 40px;
+  }
+  
+  .clasament-table th:nth-child(6),
+  .clasament-table td:nth-child(6) {
+    width: 50px;
+    min-width: 50px;
   }
   
   .prediction-btn {

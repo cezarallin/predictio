@@ -31,36 +31,72 @@ interface Prediction {
   user_name: string;
 }
 
+interface Reaction {
+  id: number;
+  user_id: number;
+  target_user_id: number;
+  match_id: string;
+  reaction: 'like' | 'dislike' | 'laugh' | 'wow' | 'love' | 'angry';
+  user_name: string;
+  target_user_name: string;
+}
+
+interface PlayerBoost {
+  id: number;
+  user_id: number;
+  match_id: string;
+  user_name: string;
+}
+
 interface PredictionTableProps {
   currentUser: { id: number; name: string };
 }
+
+const REACTION_OPTIONS = [
+  { type: 'like' as const, emoji: '👍', label: 'Like' },
+  { type: 'dislike' as const, emoji: '👎', label: 'Dislike' },
+  { type: 'laugh' as const, emoji: '😂', label: 'Laugh' },
+  { type: 'wow' as const, emoji: '😮', label: 'Wow' },
+  { type: 'love' as const, emoji: '❤️', label: 'Love' },
+  { type: 'angry' as const, emoji: '😡', label: 'Angry' }
+];
 
 export default function PredictionTable({ currentUser }: PredictionTableProps) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [reactions, setReactions] = useState<Reaction[]>([]);
+  const [playerBoosts, setPlayerBoosts] = useState<PlayerBoost[]>([]);
   const [localPredictions, setLocalPredictions] = useState<Record<string, '1' | 'X' | '2'>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showReactionDropdown, setShowReactionDropdown] = useState<string | null>(null);
+  const [showBoostConfirmModal, setShowBoostConfirmModal] = useState<string | null>(null); // matchId-userId format
 
   const loadData = useCallback(async () => {
     try {
-      const [matchesRes, usersRes, predictionsRes] = await Promise.all([
+      const [matchesRes, usersRes, predictionsRes, reactionsRes, boostsRes] = await Promise.all([
         fetch('/api/matches'),
         fetch('/api/users'),
         fetch('/api/predictions'),
+        fetch('/api/reactions'),
+        fetch('/api/boosts'),
       ]);
 
-      const [matchesData, usersData, predictionsData] = await Promise.all([
+      const [matchesData, usersData, predictionsData, reactionsData, boostsData] = await Promise.all([
         matchesRes.json(),
         usersRes.json(),
         predictionsRes.json(),
+        reactionsRes.json(),
+        boostsRes.json(),
       ]);
 
       setMatches(matchesData.matches || []);
       setUsers(usersData.users || []); // This already excludes admin users
       setPredictions(predictionsData.predictions || []);
+      setReactions(reactionsData.reactions || []);
+      setPlayerBoosts(boostsData.boosts || []);
       
       // Check if current user is admin
       const allUsers = usersData.allUsers || [];
@@ -77,6 +113,22 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+
+  // Close reaction dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showReactionDropdown && !target?.closest('[data-reaction-dropdown]')) {
+        setShowReactionDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showReactionDropdown]);
 
   const makePrediction = (matchId: string, prediction: '1' | 'X' | '2') => {
     setLocalPredictions(prev => ({
@@ -244,6 +296,35 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     }
   };
 
+
+  const setPlayerBoost = async (matchId: string) => {
+    // If this match is already our boost, do nothing
+    if (getCurrentUserBoostMatch() === matchId) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/boosts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          matchId,
+        }),
+      });
+
+      if (response.ok) {
+        loadData();
+      } else {
+        const errorData = await response.json();
+        alert(`❌ Error: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to set player boost:', error);
+      alert('❌ Failed to set player boost. Please try again.');
+    }
+  };
+
   const clearAllUsers = async () => {
     if (!confirm('⚠️ Ești sigur că vrei să ștergi toți utilizatorii NON-ADMIN și predicțiile lor? Adminii vor fi păstrați!')) {
       return;
@@ -277,6 +358,78 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     }
   };
 
+  const addReaction = async (targetUserId: number, matchId: string, reactionType: 'like' | 'dislike' | 'love' | 'laugh' | 'wow' | 'angry' | 'party' | 'fire') => {
+    try {
+      const response = await fetch('/api/reactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          targetUserId,
+          matchId,
+          reaction: reactionType,
+        }),
+      });
+
+      if (response.ok) {
+        loadData();
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to add reaction:', errorData.error);
+      }
+    } catch (error) {
+      console.error('Failed to add reaction:', error);
+    }
+  };
+
+  const removeReaction = async (targetUserId: number, matchId: string) => {
+    try {
+      const response = await fetch('/api/reactions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          targetUserId,
+          matchId,
+        }),
+      });
+
+      if (response.ok) {
+        loadData();
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to remove reaction:', errorData.error);
+      }
+    } catch (error) {
+      console.error('Failed to remove reaction:', error);
+    }
+  };
+
+  const getUserReaction = (matchId: string, targetUserId: number): 'like' | 'dislike' | 'love' | 'laugh' | 'wow' | 'angry' | 'party' | 'fire' | null => {
+    const reaction = reactions.find(r => r.match_id === matchId && r.target_user_id === targetUserId && r.user_id === currentUser.id);
+    return reaction ? reaction.reaction : null;
+  };
+
+  const getReactionCounts = (matchId: string, targetUserId: number) => {
+    const userReactions = reactions.filter(r => r.match_id === matchId && r.target_user_id === targetUserId);
+    const counts: Record<string, number> = {};
+    
+    REACTION_OPTIONS.forEach(option => {
+      counts[option.type] = userReactions.filter(r => r.reaction === option.type).length;
+    });
+    
+    return counts;
+  };
+
+  const getPlayerBoostMatch = (userId: number): string | null => {
+    const boost = playerBoosts.find(b => b.user_id === userId);
+    return boost ? boost.match_id : null;
+  };
+
+  const getCurrentUserBoostMatch = (): string | null => {
+    return getPlayerBoostMatch(currentUser.id);
+  };
+
   const getUserPrediction = (matchId: string, userId: number): '1' | 'X' | '2' | null => {
     // For current user, check local predictions first if they exist
     if (userId === currentUser.id && localPredictions[matchId]) {
@@ -294,6 +447,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
 
   const calculateUserScore = (userId: number): number => {
     let totalOdds = 0;
+    const userBoostMatch = getPlayerBoostMatch(userId);
 
     matches.forEach(match => {
       if (match.result) {
@@ -302,7 +456,14 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
           const odds = userPrediction === '1' ? match.odds_1 : 
                       userPrediction === 'X' ? match.odds_x : 
                       match.odds_2;
-          totalOdds += odds || 0;
+          let matchOdds = odds || 0;
+          
+          // Double points for user's boost match
+          if (userBoostMatch && match.id === userBoostMatch) {
+            matchOdds *= 2;
+          }
+          
+          totalOdds += matchOdds;
         }
       }
     });
@@ -312,6 +473,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
 
   const calculateUserTotalOdds = (userId: number): number => {
     let totalOdds = 0;
+    const userBoostMatch = getPlayerBoostMatch(userId);
 
     matches.forEach(match => {
       const userPrediction = getUserPrediction(match.id, userId);
@@ -319,7 +481,14 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
         const odds = userPrediction === '1' ? match.odds_1 : 
                     userPrediction === 'X' ? match.odds_x : 
                     match.odds_2;
-        totalOdds += odds || 0;
+        let matchOdds = odds || 0;
+        
+        // Double odds for user's boost match
+        if (userBoostMatch && match.id === userBoostMatch) {
+          matchOdds *= 2;
+        }
+        
+        totalOdds += matchOdds;
       }
     });
 
@@ -416,10 +585,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     return (
       <div className="superbet-card" style={{ padding: '48px', textAlign: 'center' }}>
         <Trophy style={{ width: '64px', height: '64px', color: 'var(--superbet-red)', margin: '0 auto 16px' }} />
-        <h3 style={{ 
+        <h3         style={{ 
           fontSize: '24px', 
           fontWeight: 600, 
-          color: '#1a1a1a', 
+          color: 'var(--superbet-text)', 
           margin: '0 0 8px 0' 
         }}>
           Nu sunt Meciuri Disponibile
@@ -446,12 +615,12 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Calendar style={{ width: '20px', height: '20px', color: 'var(--superbet-red)' }} />
-              <span style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a' }}>
+              <span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--superbet-text)' }}>
                 Predicții Fotbal
               </span>
               <div style={{
                 padding: '4px 8px',
-                background: '#f3f4f6',
+                background: 'var(--superbet-light-gray)',
                 borderRadius: '12px',
                 fontSize: '12px',
                 fontWeight: 600,
@@ -671,13 +840,13 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
         <div style={{ padding: '20px', borderBottom: '1px solid var(--superbet-light-gray)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Trophy style={{ width: '20px', height: '20px', color: 'var(--superbet-red)' }} />
-            <span style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a' }}>
+            <span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--superbet-text)' }}>
               Clasament
             </span>
           </div>
         </div>
         <div style={{ overflowX: 'auto' }}>
-          <table className="superbet-table">
+          <table className="superbet-table clasament-table">
             <thead>
               <tr>
                 <th style={{ textAlign: 'center', width: '60px' }}>Pos</th>
@@ -725,24 +894,21 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                     borderLeft: isCurrentUser ? '3px solid var(--superbet-red)' : '3px solid transparent'
                   }}>
                     <td style={{ textAlign: 'center' }}>
-                      <div style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '14px',
-                        ...medalStyle,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 700,
-                        fontSize: '12px',
-                        margin: '0 auto'
-                      }}>
-                        {position}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '20px' }}>
+                          {position === 1 ? '🏆' : position === 2 ? '🥈' : position === 3 ? '🥉' : '🎯'}
+                        </span>
+                        <span style={{ 
+                          fontWeight: 'bold', 
+                          color: position === 1 ? '#ffd700' : position === 2 ? '#c0c0c0' : position === 3 ? '#cd7f32' : '#6b7280'
+                        }}>
+                          {position}
+                        </span>
                       </div>
                     </td>
                     <td style={{ fontWeight: isCurrentUser ? 600 : 400 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ color: isCurrentUser ? 'var(--superbet-red)' : '#1a1a1a' }}>
+                        <span style={{ color: isCurrentUser ? 'var(--superbet-red)' : 'var(--superbet-text)' }} className="player-name-clasament">
                           {player.name}
                         </span>
                         {isCurrentUser && (
@@ -775,7 +941,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                       <span style={{ 
                         fontFamily: 'monospace', 
                         fontWeight: 600, 
-                        color: '#1a1a1a',
+                        color: 'var(--superbet-text)',
                         fontSize: '13px'
                       }}>
                         {player.totalOdds.toFixed(2)}
@@ -812,16 +978,39 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
         </div>
       </div>
 
+      {/* Boost info - shown only when user can boost */}
+      {!isCurrentUserAdmin && hasCurrentUserCompletedAllPredictions().completed && !getCurrentUserBoostMatch() && (
+        <div className="superbet-card" style={{ 
+          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          border: '2px solid #fbbf24',
+          borderRadius: '12px',
+          padding: '16px 20px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <span style={{ fontSize: '20px' }}>🚀</span>
+            <span style={{ 
+              fontSize: '16px', 
+              color: '#92400e', 
+              fontWeight: 600,
+              lineHeight: 1.4
+            }}>
+              <strong>Perfect! Ai terminat toate predicțiile.</strong> Acum poți să selectezi un meci pentru boost - dă click pe un rând din tabelul de jos pentru a dubla punctajul acelui meci.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Main prediction table */}
       <div className="superbet-card" style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table className="superbet-table">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', minWidth: '200px' }}>Meci</th>
-                <th style={{ textAlign: 'center', width: '80px' }}>1</th>
-                <th style={{ textAlign: 'center', width: '80px' }}>X</th>
-                <th style={{ textAlign: 'center', width: '80px' }}>2</th>
+                <th style={{ textAlign: 'left', minWidth: '160px' }} className="match-info-header">Meci</th>
                 {users.map(user => (
                   <th key={user.id} style={{ textAlign: 'center', minWidth: '80px' }} title={user.name}>
                     {user.name.length > 8 ? `${user.name.substring(0, 8)}...` : user.name}
@@ -831,37 +1020,62 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
               </tr>
             </thead>
             <tbody>
-              {matches.map((match) => (
-                <tr key={match.id}>
-                  <td>
+              {matches.map((match) => {
+                const isCurrentUserBoostMatch = !isCurrentUserAdmin && getCurrentUserBoostMatch() === match.id;
+                const predictionStatus = hasCurrentUserCompletedAllPredictions();
+                const canBoostThisMatch = !isCurrentUserAdmin && predictionStatus.completed && !match.result && !getCurrentUserBoostMatch();
+                
+                return (
+                <tr 
+                  key={match.id}
+                  onClick={() => {
+                    if (canBoostThisMatch) {
+                      setShowBoostConfirmModal(match.id);
+                    }
+                  }}
+                  style={{
+                    cursor: canBoostThisMatch ? 'pointer' : 'default',
+                    ...(canBoostThisMatch && {
+                      transition: 'background-color 0.2s ease'
+                    })
+                  }}
+                  onMouseEnter={(e) => {
+                    if (canBoostThisMatch) {
+                      e.currentTarget.style.backgroundColor = 'rgba(251, 191, 36, 0.15)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (canBoostThisMatch) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  <td className="match-info-cell">
                     <div>
-                      <div style={{ fontWeight: 600, color: '#1a1a1a', marginBottom: '4px' }}>
-                        {match.home_team} vs {match.away_team}
+                      <div style={{ fontWeight: 600, color: 'var(--superbet-text)', marginBottom: '4px' }}>
+                        {match.home_team} <span style={{ fontWeight: 400, fontSize: '0.85em', color: 'var(--superbet-gray)' }}>vs</span> {match.away_team}
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--superbet-gray)', marginBottom: '2px' }}>
-                        {match.league}
+                      <div style={{ fontSize: '12px', color: 'var(--superbet-gray)', marginBottom: '6px' }} className="match-league-date">
+                        {match.league} • {format(new Date(new Date(match.match_date).getTime() - 60 * 60 * 1000), 'dd MMM, HH:mm')}
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
-                        {format(new Date(match.match_date), 'dd MMM, HH:mm')}
+                      {/* Odds under match details */}
+                      <div style={{ 
+                        display: 'flex', 
+                        gap: '6px', 
+                        alignItems: 'center',
+                        flexWrap: 'nowrap'
+                      }} className="odds-row">
+                        <div className="odds-container">
+                          {match.odds_1?.toFixed(2) || '-'}
+                        </div>
+                        <div className="odds-container">
+                          {match.odds_x?.toFixed(2) || '-'}
+                        </div>
+                        <div className="odds-container">
+                          {match.odds_2?.toFixed(2) || '-'}
+                        </div>
                       </div>
                     </div>
-                  </td>
-                  
-                  {/* Odds columns */}
-                  <td style={{ textAlign: 'center' }}>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#1a1a1a' }}>
-                      {match.odds_1?.toFixed(2) || '-'}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#1a1a1a' }}>
-                      {match.odds_x?.toFixed(2) || '-'}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#1a1a1a' }}>
-                      {match.odds_2?.toFixed(2) || '-'}
-                    </span>
                   </td>
 
                   {/* User prediction columns */}
@@ -878,23 +1092,28 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                       <td key={user.id} style={{ textAlign: 'center' }}>
                         {isCurrentUser && !match.result && !hasSubmittedPrediction ? (
                           // Show prediction buttons for current user if match has no result and no submitted prediction
-                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                            {(['1', 'X', '2'] as const).map(option => (
-                              <button
-                                key={option}
-                                onClick={() => makePrediction(match.id, option)}
-                                className={`prediction-btn ${userPrediction === option ? 'selected' : ''}`}
-                                style={userPrediction === option ? {
-                                  background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-                                  color: 'white',
-                                  border: '2px solid #d97706',
-                                  fontWeight: '700',
-                                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
-                                } : {}}
-                              >
-                                {option}
-                              </button>
-                            ))}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                            <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                              {(['1', 'X', '2'] as const).map(option => (
+                                <button
+                                  key={option}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    makePrediction(match.id, option);
+                                  }}
+                                  className={`prediction-btn ${userPrediction === option ? 'selected' : ''}`}
+                                  style={userPrediction === option ? {
+                                    background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                                    color: 'white',
+                                    border: '2px solid #d97706',
+                                    fontWeight: '700',
+                                    boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+                                  } : {}}
+                                >
+                                  {option}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         ) : shouldHidePredictions ? (
                           // Hide other players' predictions if current user hasn't completed all
@@ -909,19 +1128,175 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                           </div>
                         ) : (
                           // Show submitted prediction or admin controls
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                            <span className={`prediction-btn ${
-                              match.result && userPrediction === match.result ? 'correct' :
-                              match.result && userPrediction && userPrediction !== match.result ? 'incorrect' :
-                              userPrediction ? 'selected' : ''
-                            }`}>
-                              {userPrediction || '-'}
-                            </span>
-                            {isCurrentUser && hasSubmittedPrediction && !match.result && (
-                              <span style={{ fontSize: '12px' }} title="Predicția a fost trimisă și este blocată">
-                                🔒
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', position: 'relative' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+                              <span 
+                                className={`prediction-btn ${
+                                  match.result && userPrediction === match.result ? 'correct' :
+                                  match.result && userPrediction && userPrediction !== match.result ? 'incorrect' :
+                                  userPrediction ? 'selected' : ''
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!isCurrentUser && !isCurrentUserAdmin && userPrediction) {
+                                    const dropdownKey = `${match.id}-${user.id}`;
+                                    setShowReactionDropdown(showReactionDropdown === dropdownKey ? null : dropdownKey);
+                                  }
+                                }}
+                                style={{ 
+                                  cursor: (!isCurrentUser && !isCurrentUserAdmin && userPrediction) ? 'pointer' : 'default',
+                                  transition: 'all 0.2s ease',
+                                  position: 'relative'
+                                }}
+                              >
+                                {userPrediction || '-'}
+                                {/* Show boost indicator for this user - only if current user has also chosen a boost */}
+                                {getPlayerBoostMatch(user.id) === match.id && getCurrentUserBoostMatch() && (
+                                  <span style={{ 
+                                    fontSize: window.innerWidth <= 768 ? '10px' : '12px', 
+                                    color: '#fbbf24',
+                                    fontWeight: 700,
+                                    position: 'absolute',
+                                    top: '-6px',
+                                    right: '-6px',
+                                    lineHeight: 1
+                                  }} title={`${user.name} a ales acest meci pentru boost (x2)`}>
+                                    🚀
+                                  </span>
+                                )}
                               </span>
+                            </div>
+                            
+                            {/* Reaction Dropdown */}
+                            {showReactionDropdown === `${match.id}-${user.id}` && !isCurrentUser && !isCurrentUserAdmin && userPrediction && (
+                              <div 
+                                data-reaction-dropdown
+                                style={{
+                                  position: 'absolute',
+                                  bottom: '100%',
+                                  left: '50%',
+                                  transform: 'translateX(-50%)',
+                                  zIndex: 1000,
+                                  background: 'var(--reaction-dropdown-bg, white)',
+                                  border: '1px solid var(--reaction-dropdown-border, #d1d5db)',
+                                  borderRadius: '8px',
+                                  padding: '8px',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                  display: 'grid',
+                                  gridTemplateColumns: 'repeat(6, 1fr)',
+                                  gridTemplateRows: 'repeat(1, 1fr)',
+                                  gap: '4px',
+                                  minWidth: window.innerWidth <= 768 ? '220px' : '240px'
+                                }}
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                }}
+                              >
+                                {REACTION_OPTIONS.map(({ type, emoji }) => {
+                                  const currentUserReaction = getUserReaction(match.id, user.id);
+                                  const isActive = currentUserReaction === type;
+                                  
+                                  return (
+                                    <button
+                                      key={type}
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        
+                                        if (isActive) {
+                                          removeReaction(user.id, match.id);
+                                        } else {
+                                          addReaction(user.id, match.id, type);
+                                        }
+                                        setShowReactionDropdown(null);
+                                      }}
+                                      style={{
+                                        padding: window.innerWidth <= 768 ? '6px' : '8px',
+                                        background: isActive ? '#fbbf24' : 'transparent',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: window.innerWidth <= 768 ? '18px' : '18px',
+                                        minHeight: window.innerWidth <= 768 ? '32px' : '36px',
+                                        aspectRatio: '1'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        if (!isActive) {
+                                          e.currentTarget.style.backgroundColor = 'var(--superbet-light-gray)';
+                                          e.currentTarget.style.transform = 'scale(1.1)';
+                                        }
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        if (!isActive) {
+                                          e.currentTarget.style.backgroundColor = 'transparent';
+                                          e.currentTarget.style.transform = 'scale(1)';
+                                        }
+                                      }}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             )}
+                            
+                            {/* Show existing reactions - Instagram/Facebook style */}
+                            {!isCurrentUser && !isCurrentUserAdmin && userPrediction && (() => {
+                              const reactionCounts = getReactionCounts(match.id, user.id);
+                              const activeReactions = REACTION_OPTIONS.filter(option => reactionCounts[option.type] > 0)
+                                .sort((a, b) => reactionCounts[b.type] - reactionCounts[a.type]); // Sort by count, most popular first
+                              
+                              if (activeReactions.length === 0) return null;
+                              
+                              const totalCount = activeReactions.reduce((sum, reaction) => sum + reactionCounts[reaction.type], 0);
+                              const topReactions = activeReactions.slice(0, 2); // Show max 2 top reactions
+                              const currentUserReaction = getUserReaction(match.id, user.id);
+                              const hasUserReaction = currentUserReaction !== null;
+                              
+                              return (
+                                <div style={{ 
+                                  position: 'absolute',
+                                  bottom: window.innerWidth <= 768 ? '-12px' : '-8px',
+                                  right: window.innerWidth <= 768 ? '-4px' : '-2px',
+                                  background: hasUserReaction ? '#fbbf24' : 'var(--reaction-bg, white)',
+                                  color: hasUserReaction ? 'white' : 'var(--reaction-text, #6b7280)',
+                                  borderRadius: window.innerWidth <= 768 ? '12px' : '14px',
+                                  padding: window.innerWidth <= 768 ? '2px 6px' : '3px 8px',
+                                  fontSize: window.innerWidth <= 768 ? '9px' : '11px',
+                                  fontWeight: 600,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: window.innerWidth <= 768 ? '2px' : '3px',
+                                  border: hasUserReaction ? 'none' : '1px solid var(--reaction-border, #e5e7eb)',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                  zIndex: 10,
+                                  minHeight: window.innerWidth <= 768 ? '16px' : '20px'
+                                }}>
+                                  {/* Show top emoji reactions */}
+                                  {topReactions.map(({ emoji }, index) => (
+                                    <span key={index} style={{ 
+                                      fontSize: window.innerWidth <= 768 ? '8px' : '10px',
+                                      lineHeight: 1
+                                    }}>
+                                      {emoji}
+                                    </span>
+                                  ))}
+                                  
+                                  {/* Show total count */}
+                                  <span style={{ 
+                                    fontSize: window.innerWidth <= 768 ? '8px' : '10px',
+                                    marginLeft: topReactions.length > 0 ? '1px' : '0'
+                                  }}>
+                                    {totalCount}
+                                  </span>
+                                </div>
+                              );
+                            })()}
+                            
                             {isCurrentUserAdmin && (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                 {/* Admin prediction override buttons */}
@@ -929,7 +1304,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                                   {(['1', 'X', '2'] as const).map(option => (
                                     <button
                                       key={option}
-                                      onClick={() => overridePrediction(user.id, match.id, option)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        overridePrediction(user.id, match.id, option);
+                                      }}
                                       className="admin-mini-btn"
                                       style={{
                                         fontSize: '10px',
@@ -948,7 +1326,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                                   ))}
                                   {hasSubmittedPrediction && (
                                     <button
-                                      onClick={() => overridePrediction(user.id, match.id, null)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        overridePrediction(user.id, match.id, null);
+                                      }}
                                       className="admin-mini-btn"
                                       style={{
                                         fontSize: '10px',
@@ -987,7 +1368,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                             {(['1', 'X', '2'] as const).map(option => (
                               <button
                                 key={option}
-                                onClick={() => overrideResult(match.id, option)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  overrideResult(match.id, option);
+                                }}
                                 className="admin-mini-btn"
                                 style={{
                                   fontSize: '10px',
@@ -1005,7 +1389,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                               </button>
                             ))}
                             <button
-                              onClick={() => overrideResult(match.id, null)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                overrideResult(match.id, null);
+                              }}
                               className="admin-mini-btn"
                               style={{
                                 fontSize: '10px',
@@ -1029,7 +1416,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                         {(['1', 'X', '2'] as const).map(option => (
                           <button
                             key={option}
-                            onClick={() => isCurrentUserAdmin ? overrideResult(match.id, option) : setMatchResult(match.id, option)}
+                            onClick={(e) => {
+              e.stopPropagation();
+              isCurrentUserAdmin ? overrideResult(match.id, option) : setMatchResult(match.id, option);
+            }}
                             style={{ 
                               minWidth: '28px', 
                               minHeight: '28px', 
@@ -1060,7 +1450,8 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -1119,6 +1510,282 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
           </button>
         </div>
       )}
+
+      {/* Boost Confirmation Modal */}
+      {showBoostConfirmModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: 'var(--superbet-card-bg)',
+            borderRadius: '16px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '100%',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+            textAlign: 'center',
+            border: '1px solid var(--superbet-border)'
+          }}>
+            {(() => {
+              const selectedMatch = matches.find(m => m.id === showBoostConfirmModal);
+              return selectedMatch ? (
+                <>
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{
+                      fontSize: '24px',
+                      marginBottom: '12px'
+                    }}>🚀</div>
+                    <h3 style={{
+                      fontSize: '20px',
+                      fontWeight: 'bold',
+                      color: 'var(--superbet-text)',
+                      marginBottom: '8px',
+                      margin: '0 0 8px 0'
+                    }}>
+                      Confirmă Boost x2
+                    </h3>
+                    <p style={{
+                      fontSize: '16px',
+                      color: 'var(--superbet-gray)',
+                      lineHeight: 1.5,
+                      margin: '0'
+                    }}>
+                      Vrei să setezi <strong>boost x2</strong> pentru meciul:
+                    </p>
+                    <p style={{
+                      fontSize: '18px',
+                      fontWeight: 'bold',
+                      color: 'var(--boost-highlight-color, #fbbf24)',
+                      margin: '12px 0',
+                      padding: '8px 16px',
+                      background: 'var(--boost-highlight-bg, #fef3c7)',
+                      borderRadius: '8px',
+                      border: '1px solid var(--boost-highlight-color, #fbbf24)'
+                    }}>
+                      {selectedMatch.home_team} - {selectedMatch.away_team}
+                    </p>
+                    <p style={{
+                      fontSize: '14px',
+                      color: 'var(--warning-color, #ef4444)',
+                      margin: '8px 0 0 0',
+                      fontWeight: 600
+                    }}>
+                      ⚠️ Nu poți schimba boost-ul după confirmare!
+                    </p>
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    gap: '12px',
+                    justifyContent: 'center'
+                  }}>
+                    <button
+                      onClick={() => setShowBoostConfirmModal(null)}
+                      style={{
+                        padding: '12px 24px',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        borderRadius: '8px',
+                        border: '1px solid var(--superbet-border)',
+                        background: 'var(--superbet-card-bg)',
+                        color: 'var(--superbet-gray)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--superbet-light-gray)';
+                        e.currentTarget.style.borderColor = 'var(--superbet-gray)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--superbet-card-bg)';
+                        e.currentTarget.style.borderColor = 'var(--superbet-border)';
+                      }}
+                    >
+                      Anulează
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await setPlayerBoost(selectedMatch.id);
+                        setShowBoostConfirmModal(null);
+                      }}
+                      style={{
+                        padding: '12px 24px',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 4px 12px rgba(251, 191, 36, 0.4)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(251, 191, 36, 0.6)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(251, 191, 36, 0.4)';
+                      }}
+                    >
+                      🚀 Confirmă Boost x2
+                    </button>
+                  </div>
+                </>
+              ) : null;
+            })()}
+          </div>
+        </div>
+      )}
+      
+      <style jsx>{`
+        /* Dark theme custom properties for boost modal */
+        :global(html.dark) {
+          --boost-highlight-color: #fbbf24;
+          --boost-highlight-bg: rgba(251, 191, 36, 0.15);
+          --warning-color: #fb7185;
+          --reaction-bg: var(--superbet-card-bg);
+          --reaction-text: var(--superbet-text);
+          --reaction-border: var(--superbet-border);
+          --reaction-dropdown-bg: var(--superbet-card-bg);
+          --reaction-dropdown-border: var(--superbet-border);
+        }
+
+        .odds-container {
+          display: inline-block;
+          padding: 2px 6px;
+          border: 1px solid var(--superbet-border);
+          border-radius: 4px;
+          background-color: var(--superbet-light-gray);
+          font-family: monospace;
+          font-weight: 600;
+          color: var(--superbet-text);
+          font-size: 11px;
+          min-width: auto;
+        }
+        
+        .player-name-clasament {
+          font-weight: normal !important;
+          font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+          .match-info-header,
+          .match-info-cell {
+            position: sticky;
+            left: 0;
+            background: var(--superbet-card-bg);
+            z-index: 10;
+            min-width: 150px !important;
+          }
+          
+          .match-info-header {
+            background: var(--superbet-light-gray);
+            z-index: 11;
+          }
+          
+          .match-league-date {
+            font-size: 10px !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          
+          .player-name-clasament {
+            font-size: 15px !important;
+            font-weight: normal !important;
+          }
+          
+          tr:hover .match-info-cell,
+          tr:active .match-info-cell,
+          tr[style*="background-color"] .match-info-cell {
+            background: inherit !important;
+          }
+          
+        }
+        
+        @media (max-width: 480px) {
+          .match-info-header,
+          .match-info-cell {
+            position: sticky;
+            left: 0;
+            background: var(--superbet-card-bg);
+            z-index: 10;
+            min-width: 140px !important;
+          }
+          
+          .match-info-header {
+            background: var(--superbet-light-gray);
+            z-index: 11;
+          }
+          
+          .match-league-date {
+            font-size: 9px !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          
+          .player-name-clasament {
+            font-size: 16px !important;
+            font-weight: normal !important;
+          }
+          
+          tr:hover .match-info-cell,
+          tr:active .match-info-cell,
+          tr[style*="background-color"] .match-info-cell {
+            background: inherit !important;
+          }
+          
+        }
+        
+        /* Landscape mode on mobile devices */
+        @media (max-height: 500px) and (orientation: landscape) {
+          .match-info-header,
+          .match-info-cell {
+            position: sticky;
+            left: 0;
+            background: var(--superbet-card-bg);
+            z-index: 10;
+            min-width: 160px !important;
+          }
+          
+          .match-info-header {
+            background: var(--superbet-light-gray);
+            z-index: 11;
+          }
+          
+          .match-league-date {
+            font-size: 10px !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          
+          .odds-container {
+            font-size: 10px !important;
+            padding: 1px 4px !important;
+            margin-right: 3px !important;
+          }
+          
+          tr:hover .match-info-cell,
+          tr:active .match-info-cell,
+          tr[style*="background-color"] .match-info-cell {
+            background: inherit !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

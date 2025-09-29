@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import PredictionTable from '@/components/PredictionTable';
 import LoginForm from '@/components/LoginForm';
 import Header from '@/components/Header';
+import WelcomeModal from '@/components/WelcomeModal';
 
 export default function Home() {
   const [currentUser, setCurrentUser] = useState<{id: number, name: string} | null>(null);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   useEffect(() => {
     // Check for stored user in localStorage
@@ -23,6 +25,8 @@ export default function Home() {
   const handleLogin = (user: {id: number, name: string}) => {
     setCurrentUser(user);
     localStorage.setItem('predictio_user', JSON.stringify(user));
+    // Show welcome modal only on fresh login (not on page refresh)
+    setShowWelcomeModal(true);
   };
 
   const handleLogout = () => {
@@ -30,11 +34,15 @@ export default function Home() {
     localStorage.removeItem('predictio_user');
   };
 
+  const handleCloseWelcomeModal = () => {
+    setShowWelcomeModal(false);
+  };
+
   return (
-    <div style={{ minHeight: '100vh', background: '#ffffff' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--superbet-bg)' }}>
       <Header currentUser={currentUser} onLogout={handleLogout} />
       
-      <main style={{ padding: '20px', background: '#f9fafb', minHeight: 'calc(100vh - 140px)' }}>
+      <main style={{ padding: '20px', background: 'var(--superbet-light-gray)', minHeight: 'calc(100vh - 140px)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           {!currentUser ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -46,7 +54,7 @@ export default function Home() {
         </div>
       </main>
       
-      <footer style={{ background: '#ffffff', borderTop: '1px solid #e5e7eb', padding: '20px 0' }}>
+      <footer style={{ background: 'var(--superbet-card-bg)', borderTop: '1px solid var(--superbet-border)', padding: '20px 0' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -62,7 +70,7 @@ export default function Home() {
                 <span style={{ color: 'white', fontWeight: 'bold', fontSize: '14px' }}>P</span>
               </div>
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1a1a1a' }}>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--superbet-text)' }}>
                   Predictio
                 </div>
               </div>
@@ -75,6 +83,12 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      
+      {/* Welcome Modal - shown only after fresh login */}
+      <WelcomeModal 
+        isOpen={showWelcomeModal} 
+        onClose={handleCloseWelcomeModal} 
+      />
     </div>
   );
 }

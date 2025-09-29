@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { clearAllPredictions, getUserByName } from '@/lib/database';
+import { clearAllPredictions, clearAllPlayerBoosts, clearAllReactions, getUserByName } from '@/lib/database';
 import db from '@/lib/database';
 
 export async function POST(request: NextRequest) {
@@ -16,10 +16,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied. Admin privileges required.' }, { status: 403 });
     }
 
-    console.log('🔄 Clearing non-admin users and all predictions...');
+    console.log('🔄 Clearing non-admin users, predictions, boosts, and reactions...');
 
-    // Clear all predictions first
+    // Clear all predictions, boosts, and reactions first
     clearAllPredictions.run();
+    clearAllPlayerBoosts.run();
+    clearAllReactions.run();
     
     // Delete only non-admin users
     const deleteNonAdminUsers = db.prepare(`
@@ -27,10 +29,10 @@ export async function POST(request: NextRequest) {
     `);
     const result = deleteNonAdminUsers.run();
     
-    console.log(`✅ Deleted ${result.changes} non-admin users and all predictions`);
+    console.log(`✅ Deleted ${result.changes} non-admin users and all related data`);
 
     return NextResponse.json({ 
-      message: `Successfully deleted ${result.changes} non-admin users and all predictions. Admin users preserved.`
+      message: `Successfully deleted ${result.changes} non-admin users and all related data (predictions, boosts, reactions). Admin users preserved.`
     });
 
   } catch (error) {

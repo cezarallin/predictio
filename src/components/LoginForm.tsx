@@ -62,7 +62,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
           <h2 style={{ 
             fontSize: '28px', 
             fontWeight: 'bold', 
-            color: '#1a1a1a', 
+            color: 'var(--superbet-text)', 
             margin: '0 0 8px 0' 
           }}>
             Intră în Joc!
@@ -82,7 +82,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
               display: 'block', 
               fontSize: '14px', 
               fontWeight: 600, 
-              color: '#1a1a1a', 
+              color: 'var(--superbet-text)', 
               marginBottom: '8px' 
             }}>
               Numele Tău
@@ -98,8 +98,8 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                 border: '1px solid var(--superbet-border)',
                 borderRadius: '8px',
                 fontSize: '16px',
-                color: '#1a1a1a',
-                background: '#ffffff',
+                color: 'var(--superbet-text)',
+                background: 'var(--superbet-input-bg)',
                 transition: 'border-color 0.2s ease',
                 outline: 'none'
               }}
@@ -118,8 +118,8 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
           {error && (
             <div style={{ 
               padding: '12px', 
-              background: '#fef2f2', 
-              border: '1px solid #fecaca', 
+              background: 'rgba(239, 68, 68, 0.1)', 
+              border: '1px solid rgba(239, 68, 68, 0.3)', 
               borderRadius: '8px' 
             }}>
               <p style={{ fontSize: '14px', color: 'var(--superbet-red)', margin: 0 }}>{error}</p>

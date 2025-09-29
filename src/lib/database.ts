@@ -39,6 +39,33 @@ function initDatabase() {
     )
   `);
 
+  // Reactions table for reactions on predictions
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      target_user_id INTEGER NOT NULL,
+      match_id TEXT NOT NULL,
+      reaction TEXT NOT NULL, -- 'like', 'dislike', 'laugh', 'wow', 'love', 'angry'
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id),
+      FOREIGN KEY (target_user_id) REFERENCES users (id),
+      UNIQUE(user_id, target_user_id, match_id)
+    )
+  `);
+
+  // Player boosts table - each player can choose one match to boost
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS player_boosts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      match_id TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id),
+      UNIQUE(user_id)
+    )
+  `);
+
   console.log('Database initialized');
 }
 
@@ -116,11 +143,65 @@ export const upsertPrediction = db.prepare(`
     prediction = excluded.prediction
 `);
 
+// Reaction operations
+export const addReaction = db.prepare(`
+  INSERT OR REPLACE INTO reactions (user_id, target_user_id, match_id, reaction)
+  VALUES (?, ?, ?, ?)
+`);
+
+export const removeReaction = db.prepare(`
+  DELETE FROM reactions WHERE user_id = ? AND target_user_id = ? AND match_id = ?
+`);
+
+export const getReactionsByMatch = db.prepare(`
+  SELECT r.*, u.name as user_name 
+  FROM reactions r
+  JOIN users u ON r.user_id = u.id
+  WHERE r.match_id = ?
+`);
+
+export const getAllReactions = db.prepare(`
+  SELECT r.*, u.name as user_name, tu.name as target_user_name
+  FROM reactions r
+  JOIN users u ON r.user_id = u.id
+  JOIN users tu ON r.target_user_id = tu.id
+`);
+
+export const clearAllReactions = db.prepare(`
+  DELETE FROM reactions
+`);
+
+// Player boost operations
+export const setPlayerBoost = db.prepare(`
+  INSERT OR REPLACE INTO player_boosts (user_id, match_id)
+  VALUES (?, ?)
+`);
+
+export const removePlayerBoost = db.prepare(`
+  DELETE FROM player_boosts WHERE user_id = ?
+`);
+
+export const getPlayerBoost = db.prepare(`
+  SELECT * FROM player_boosts WHERE user_id = ?
+`);
+
+export const getAllPlayerBoosts = db.prepare(`
+  SELECT pb.*, u.name as user_name
+  FROM player_boosts pb
+  JOIN users u ON pb.user_id = u.id
+`);
+
+export const clearAllPlayerBoosts = db.prepare(`
+  DELETE FROM player_boosts
+`);
+
 export const resetDatabase = () => {
   // Clear all data
   clearAllUsers.run();
   clearAllPredictions.run();
-  console.log('🗑️ All users and predictions cleared');
+  clearAllReactions.run();
+  clearAllPlayerBoosts.run();
+  console.log('🗑️ All users, predictions, reactions and boosts cleared');
 };
 
 export default db;
