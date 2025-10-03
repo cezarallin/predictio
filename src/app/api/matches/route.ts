@@ -6,7 +6,8 @@ export async function GET() {
   try {
     const matchesPath = path.join(process.cwd(), 'src', 'data', 'matches.json');
     const matchesData = readFileSync(matchesPath, 'utf8');
-    const matches = JSON.parse(matchesData);
+    const parsedData = JSON.parse(matchesData);
+    const matches = parsedData.matches || parsedData; // Support both formats
     
     // Sort matches by date (ascending - earliest first)
     const sortedMatches = matches.sort((a: any, b: any) => {
@@ -33,18 +34,33 @@ export async function POST(request: NextRequest) {
         // Read current matches
         const matchesPath = path.join(process.cwd(), 'src', 'data', 'matches.json');
         const matchesData = readFileSync(matchesPath, 'utf8');
-        const matches = JSON.parse(matchesData);
+        const parsedData = JSON.parse(matchesData);
+        const matches = parsedData.matches || parsedData || [];
         
         // Update match result
         const matchIndex = matches.findIndex((m: any) => m.id === matchId);
         if (matchIndex === -1) {
           return NextResponse.json({ error: 'Match not found' }, { status: 404 });
         }
+
+        // Check if match is cancelled
+        if (matches[matchIndex].cancelled) {
+          return NextResponse.json({ 
+            error: 'Nu se poate adăuga rezultat la un meci anulat. Dezanulează mai întâi meciul.',
+            matchId,
+            matchDetails: {
+              home_team: matches[matchIndex].home_team,
+              away_team: matches[matchIndex].away_team,
+              cancelled: true
+            }
+          }, { status: 400 });
+        }
         
         matches[matchIndex].result = result;
         
-        // Save back to file
-        writeFileSync(matchesPath, JSON.stringify(matches, null, 2));
+        // Save back to file with proper structure
+        const updatedData = { matches };
+        writeFileSync(matchesPath, JSON.stringify(updatedData, null, 2));
         
         return NextResponse.json({ matches, updated: true });
       } catch (fileError) {

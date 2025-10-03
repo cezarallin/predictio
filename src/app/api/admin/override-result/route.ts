@@ -19,11 +19,25 @@ export async function POST(request: NextRequest) {
     
     const matchesPath = path.join(process.cwd(), 'src', 'data', 'matches.json');
     const matchesData = readFileSync(matchesPath, 'utf8');
-    const matches = JSON.parse(matchesData);
+    const parsedData = JSON.parse(matchesData);
+    const matches = parsedData.matches || parsedData || [];
     
     const matchIndex = matches.findIndex((m: any) => m.id === matchId);
     if (matchIndex === -1) {
       return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+    }
+
+    // Check if match is cancelled (only for setting results, not clearing)
+    if (action !== 'clear_result' && matches[matchIndex].cancelled) {
+      return NextResponse.json({ 
+        error: 'Nu se poate adăuga rezultat la un meci anulat. Dezanulează mai întâi meciul.',
+        matchId,
+        matchDetails: {
+          home_team: matches[matchIndex].home_team,
+          away_team: matches[matchIndex].away_team,
+          cancelled: true
+        }
+      }, { status: 400 });
     }
     
     if (action === 'clear_result') {
@@ -31,8 +45,9 @@ export async function POST(request: NextRequest) {
       const previousResult = matches[matchIndex].result;
       matches[matchIndex].result = null;
       
-      // Save back to file
-      writeFileSync(matchesPath, JSON.stringify(matches, null, 2));
+      // Save back to file with proper structure
+      const updatedData = { matches };
+      writeFileSync(matchesPath, JSON.stringify(updatedData, null, 2));
       
       return NextResponse.json({ 
         message: `Result cleared for match ${matchId}`,
@@ -48,8 +63,9 @@ export async function POST(request: NextRequest) {
       const previousResult = matches[matchIndex].result;
       matches[matchIndex].result = result;
       
-      // Save back to file
-      writeFileSync(matchesPath, JSON.stringify(matches, null, 2));
+      // Save back to file with proper structure
+      const updatedData = { matches };
+      writeFileSync(matchesPath, JSON.stringify(updatedData, null, 2));
       
       // Note: The scoring will be automatically recalculated on the frontend
       // based on the new result when the component refreshes

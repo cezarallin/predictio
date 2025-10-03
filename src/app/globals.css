@@ -160,6 +160,27 @@ html, body {
   transition: background-color 0.3s ease;
 }
 
+/* Animations for SuperSpin congrats modal */
+@keyframes colorShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 /* Animations */
 @keyframes spin {
   0% { transform: rotate(0deg); }
@@ -332,4 +353,75 @@ html, body {
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+/* Gradient animation for the SuperSpin button */
+@keyframes gradient-animation {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Enhanced spin animation with easing */
+@keyframes enhanced-spin {
+  0% { 
+    transform: rotate(0deg); 
+    animation-timing-function: ease-out;
+  }
+  100% { 
+    transform: rotate(360deg); 
+  }
+}
+
+/* Responsive segment text positioning for SuperSpin wheel */
+@media (max-width: 768px) {
+  .wheel-container {
+    width: 280px !important;
+    height: 280px !important;
+  }
+  
+  .segment-text {
+    font-size: 7px !important;
+    letter-spacing: 0.3px !important;
+    line-height: 1.0 !important;
+    width: 60px !important;
+    margin-left: -30px !important;
+  }
+  
+  /* Specific positioning for each segment on tablet */
+  .segment-text:nth-child(1) { transform: rotate(22.5deg) translateY(-75px) rotate(-22.5deg) !important; }
+  .segment-text:nth-child(2) { transform: rotate(67.5deg) translateY(-75px) rotate(-67.5deg) !important; }
+  .segment-text:nth-child(3) { transform: rotate(112.5deg) translateY(-75px) rotate(-112.5deg) !important; }
+  .segment-text:nth-child(4) { transform: rotate(157.5deg) translateY(-75px) rotate(-157.5deg) !important; }
+  .segment-text:nth-child(5) { transform: rotate(202.5deg) translateY(-75px) rotate(-202.5deg) !important; }
+  .segment-text:nth-child(6) { transform: rotate(247.5deg) translateY(-75px) rotate(-247.5deg) !important; }
+  .segment-text:nth-child(7) { transform: rotate(292.5deg) translateY(-75px) rotate(-292.5deg) !important; }
+  .segment-text:nth-child(8) { transform: rotate(337.5deg) translateY(-75px) rotate(-337.5deg) !important; }
+}
+
+@media (max-width: 480px) {
+  .wheel-container {
+    width: 250px !important;
+    height: 250px !important;
+  }
+  
+  .segment-text {
+    font-size: 6px !important;
+    letter-spacing: 0.1px !important;
+    width: 45px !important;
+    margin-left: -22px !important;
+  }
+  
+  /* Specific positioning for each segment on mobile */
+  .segment-text:nth-child(1) { transform: rotate(22.5deg) translateY(-65px) rotate(-22.5deg) !important; }
+  .segment-text:nth-child(2) { transform: rotate(67.5deg) translateY(-65px) rotate(-67.5deg) !important; }
+  .segment-text:nth-child(3) { transform: rotate(112.5deg) translateY(-65px) rotate(-112.5deg) !important; }
+  .segment-text:nth-child(4) { transform: rotate(157.5deg) translateY(-65px) rotate(-157.5deg) !important; }
+  .segment-text:nth-child(5) { transform: rotate(202.5deg) translateY(-65px) rotate(-202.5deg) !important; }
+  .segment-text:nth-child(6) { transform: rotate(247.5deg) translateY(-65px) rotate(-247.5deg) !important; }
+  .segment-text:nth-child(7) { transform: rotate(292.5deg) translateY(-65px) rotate(-292.5deg) !important; }
+  .segment-text:nth-child(8) { transform: rotate(337.5deg) translateY(-65px) rotate(-337.5deg) !important; }
 }

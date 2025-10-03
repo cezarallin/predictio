@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
       // Read current matches from JSON file
       const matchesPath = path.join(process.cwd(), 'src', 'data', 'matches.json');
       const matchesData = readFileSync(matchesPath, 'utf8');
-      const matches = JSON.parse(matchesData);
+      const parsedData = JSON.parse(matchesData);
+      const matches = parsedData.matches || parsedData || [];
       
       // Clear all results (set to null)
       const clearedMatches = matches.map((match: any) => ({
@@ -39,8 +40,9 @@ export async function POST(request: NextRequest) {
         result: null
       }));
       
-      // Save back to file
-      writeFileSync(matchesPath, JSON.stringify(clearedMatches, null, 2));
+      // Save back to file with proper structure
+      const updatedData = { matches: clearedMatches };
+      writeFileSync(matchesPath, JSON.stringify(updatedData, null, 2));
       
       console.log(`✅ All match results cleared by admin ${userId}`);
 

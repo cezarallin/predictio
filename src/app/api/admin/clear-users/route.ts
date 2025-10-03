@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { clearAllPredictions, clearAllPlayerBoosts, clearAllReactions, getUserByName } from '@/lib/database';
+import { clearAllPredictions, clearAllPlayerBoosts, clearAllReactions, clearAllSecondChances, clearAllSuperSpins, getUserByName } from '@/lib/database';
 import db from '@/lib/database';
 
 export async function POST(request: NextRequest) {
@@ -10,18 +10,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Admin user ID is required' }, { status: 400 });
     }
     
-    // Check if the requesting user is admin
-    const adminUser = getUserByName.get(adminUserId) as any;
-    if (!adminUser || !adminUser.is_admin) {
-      return NextResponse.json({ error: 'Access denied. Admin privileges required.' }, { status: 403 });
+    // Verify user is admin
+    const user = await new Promise((resolve, reject) => {
+      try {
+        const result = getUserByName.get(adminUserId);
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    if (!user || !(user as any).is_admin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    console.log('🔄 Clearing non-admin users, predictions, boosts, and reactions...');
+    console.log(`🗑️ Admin ${adminUserId} clearing all non-admin users and related data...`);
 
-    // Clear all predictions, boosts, and reactions first
+    // Clear all predictions, boosts, reactions, second chances, and super spins first
     clearAllPredictions.run();
     clearAllPlayerBoosts.run();
     clearAllReactions.run();
+    clearAllSecondChances.run();
+    clearAllSuperSpins.run();
     
     // Delete only non-admin users
     const deleteNonAdminUsers = db.prepare(`
@@ -29,10 +39,12 @@ export async function POST(request: NextRequest) {
     `);
     const result = deleteNonAdminUsers.run();
     
-    console.log(`✅ Deleted ${result.changes} non-admin users and all related data`);
+    console.log(`✅ Deleted ${result.changes} non-admin users and all related data by admin ${adminUserId}`);
 
     return NextResponse.json({ 
-      message: `Successfully deleted ${result.changes} non-admin users and all related data (predictions, boosts, reactions). Admin users preserved.`
+      message: `Successfully deleted ${result.changes} non-admin users and all related data (predictions, boosts, reactions, second chances, super spins). Admin users preserved.`,
+      clearedBy: adminUserId,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {

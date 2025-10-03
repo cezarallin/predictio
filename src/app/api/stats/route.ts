@@ -1,140 +1,70 @@
 import { NextResponse } from 'next/server';
 
 // Date exacte din fotografiile clasamentelor
+// NOTĂ: Pentru a adăuga o nouă săptămână, doar adaugă un nou obiect în HISTORICAL_DATA
 const HISTORICAL_DATA = {
   week1: {
     name: "Săptămâna 1 (Sep 16-22)",
-    totalMatches: 18, // estimare bazată pe % de acuratețe
+    totalMatches: 18,
     players: {
-      "Tony": {
-        rank: 1,
-        points: 24.38,
-        odds: 42.49,
-        correct: 11,
-        accuracy: 61,
-        total: 18
-      },
-      "mihai94": {
-        rank: 2,
-        points: 24.04,
-        odds: 49.76,
-        correct: 10,
-        accuracy: 56,
-        total: 18
-      },
-      "Andrei Tone": {
-        rank: 3,
-        points: 21.33,
-        odds: 52.89,
-        correct: 8,
-        accuracy: 44,
-        total: 18
-      },
-      "Cezar": {
-        rank: 4,
-        points: 17.71,
-        odds: 43.70,
-        correct: 8,
-        accuracy: 44,
-        total: 18
-      },
-      "Dew": {
-        rank: 5,
-        points: 15.86,
-        odds: 48.86,
-        correct: 7,
-        accuracy: 39,
-        total: 18
-      },
-      "Flo": {
-        rank: 6,
-        points: 9.09,
-        odds: 55.28,
-        correct: 4,
-        accuracy: 22,
-        total: 18
-      }
+      "Tony": { rank: 1, points: 24.38, odds: 42.49, correct: 11, accuracy: 61, total: 18 },
+      "mihai94": { rank: 2, points: 24.04, odds: 49.76, correct: 10, accuracy: 56, total: 18 },
+      "Andrei Tone": { rank: 3, points: 21.33, odds: 52.89, correct: 8, accuracy: 44, total: 18 },
+      "Cezar": { rank: 4, points: 17.71, odds: 43.70, correct: 8, accuracy: 44, total: 18 },
+      "Dew": { rank: 5, points: 15.86, odds: 48.86, correct: 7, accuracy: 39, total: 18 },
+      "Flo": { rank: 6, points: 9.09, odds: 55.28, correct: 4, accuracy: 22, total: 18 }
     }
   },
   week2: {
     name: "Săptămâna 2 (Sep 23-29)",
-    totalMatches: 56, // calculat din datele din a doua imagine
+    totalMatches: 56,
     players: {
-      "Andrei Tone": {
-        rank: 1,
-        points: 60.72,
-        odds: 202.22,
-        correct: 19,
-        accuracy: 34,
-        total: 56
-      },
-      "mihai94": {
-        rank: 2,
-        points: 51.95,
-        odds: 140.72,
-        correct: 23,
-        accuracy: 41,
-        total: 56
-      },
-      "Tony": {
-        rank: 3,
-        points: 51.17,
-        odds: 155.06,
-        correct: 20,
-        accuracy: 39,
-        total: 56
-      },
-      "Dew": {
-        rank: 4,
-        points: 47.49,
-        odds: 131.48,
-        correct: 22,
-        accuracy: 39,
-        total: 56
-      },
-      "Cezar": {
-        rank: 5,
-        points: 44.34,
-        odds: 159.92,
-        correct: 18,
-        accuracy: 32,
-        total: 56
-      }
+      "Andrei Tone": { rank: 1, points: 60.72, odds: 202.22, correct: 19, accuracy: 34, total: 56 },
+      "mihai94": { rank: 2, points: 51.95, odds: 140.72, correct: 23, accuracy: 41, total: 56 },
+      "Tony": { rank: 3, points: 51.17, odds: 155.06, correct: 20, accuracy: 39, total: 56 },
+      "Dew": { rank: 4, points: 47.49, odds: 131.48, correct: 22, accuracy: 39, total: 56 },
+      "Cezar": { rank: 5, points: 44.34, odds: 159.92, correct: 18, accuracy: 32, total: 56 }
+    }
+  },
+  week3: {
+    name: "Săptămâna 3 (Sep 30 - Oct 2)",
+    totalMatches: 36, // Numărul total de meciuri din săptămâna 3
+    players: {
+      "Dew": { rank: 1, points: 46.87, odds: 81.17, correct: 21, accuracy: 58, total: 36 },
+      "Tony": { rank: 2, points: 42.57, odds: 115.21, correct: 17, accuracy: 47, total: 36 },
+      "Andrei Tone": { rank: 3, points: 37.53, odds: 129.58, correct: 14, accuracy: 39, total: 36 },
+      "mihai94": { rank: 4, points: 36.90, odds: 88.14, correct: 18, accuracy: 50, total: 36 },
+      "Cezar": { rank: 5, points: 31.20, odds: 79.98, correct: 18, accuracy: 50, total: 36 },
+      "Flo": { rank: 6, points: 30.93, odds: 99.98, correct: 16, accuracy: 44, total: 36 }
     }
   }
 };
 
 function calculatePlayerStats() {
   const players = ["Tony", "mihai94", "Andrei Tone", "Cezar", "Dew", "Flo"];
+  const weeks = Object.keys(HISTORICAL_DATA);
   
   return players.map(playerName => {
-    const week1Data = HISTORICAL_DATA.week1.players[playerName as keyof typeof HISTORICAL_DATA.week1.players];
-    const week2Data = HISTORICAL_DATA.week2.players[playerName as keyof typeof HISTORICAL_DATA.week2.players];
-    
     // Calculez câte săptămâni a jucat
     let weeksPlayed = 0;
-    if (week1Data) weeksPlayed++;
-    if (week2Data) weeksPlayed++;
-    
-    // Calculez totalurile pentru ambele săptămâni
     let totalPredictions = 0;
     let correctPredictions = 0;
     let totalPoints = 0;
     const weeklyRanks: number[] = [];
     
-    if (week1Data) {
-      totalPredictions += week1Data.total;
-      correctPredictions += week1Data.correct;
-      totalPoints += week1Data.points;
-      weeklyRanks.push(week1Data.rank);
-    }
-    
-    if (week2Data) {
-      totalPredictions += week2Data.total;
-      correctPredictions += week2Data.correct;
-      totalPoints += week2Data.points;
-      weeklyRanks.push(week2Data.rank);
-    }
+    // Iterez prin toate săptămânile din HISTORICAL_DATA
+    weeks.forEach(weekKey => {
+      const weekData = HISTORICAL_DATA[weekKey as keyof typeof HISTORICAL_DATA];
+      const playerData = weekData.players[playerName as keyof typeof weekData.players];
+      
+      if (playerData) {
+        weeksPlayed++;
+        totalPredictions += playerData.total;
+        correctPredictions += playerData.correct;
+        totalPoints += playerData.points;
+        weeklyRanks.push(playerData.rank);
+      }
+    });
     
     const accuracy = totalPredictions > 0 ? (correctPredictions / totalPredictions) * 100 : 0;
     const avgRank = weeklyRanks.length > 0 ? weeklyRanks.reduce((a, b) => a + b, 0) / weeklyRanks.length : 6;
@@ -143,16 +73,24 @@ function calculatePlayerStats() {
     let currentStreak = 0;
     let longestStreak = 0;
     
-    // Pentru jucătorii activi în săptămâna 2
-    if (week2Data) {
-      if (week2Data.accuracy > 35) currentStreak = Math.floor(week2Data.accuracy / 10);
-    } else if (week1Data && week1Data.accuracy > 50) {
-      // Pentru Flo care a jucat doar săptămâna 1
-      currentStreak = Math.floor(week1Data.accuracy / 12);
+    // Pentru ultima săptămână disponibilă
+    const lastWeekKey = weeks[weeks.length - 1];
+    const lastWeekData = HISTORICAL_DATA[lastWeekKey as keyof typeof HISTORICAL_DATA];
+    const lastPlayerData = lastWeekData.players[playerName as keyof typeof lastWeekData.players];
+    
+    if (lastPlayerData && lastPlayerData.accuracy > 35) {
+      currentStreak = Math.floor(lastPlayerData.accuracy / 10);
     }
     
-    if (week1Data && week1Data.accuracy > 50) longestStreak = Math.max(longestStreak, Math.floor(week1Data.accuracy / 8));
-    if (week2Data) longestStreak = Math.max(longestStreak, currentStreak);
+    // Calculez cel mai lung streak din toate săptămânile
+    weeks.forEach(weekKey => {
+      const weekData = HISTORICAL_DATA[weekKey as keyof typeof HISTORICAL_DATA];
+      const playerData = weekData.players[playerName as keyof typeof weekData.players];
+      
+      if (playerData && playerData.accuracy > 35) {
+        longestStreak = Math.max(longestStreak, Math.floor(playerData.accuracy / 8));
+      }
+    });
     
     return {
       name: playerName,
@@ -163,8 +101,8 @@ function calculatePlayerStats() {
       longestStreak: Math.max(longestStreak, currentStreak),
       totalPoints: Math.round(totalPoints * 100) / 100,
       favoriteOutcome: '1' as const, // Pentru simplitate
-      averageReactions: Math.round((Math.random() * 2 + 1) * weeksPlayed * 10) / 10, // Bazat pe săptămânile jucate
-      boostsUsed: weeksPlayed, // Câte săptămâni a jucat (presupunând un boost pe săptămână)
+      averageReactions: Math.round((Math.random() * 2 + 1) * weeksPlayed * 10) / 10,
+      boostsUsed: weeksPlayed,
       rank: 0, // Va fi calculat după
       avgRank,
       weeksPlayed
@@ -184,12 +122,17 @@ function calculatePlayerStats() {
 }
 
 function calculateWeeklyStats() {
-  return [
-    {
-      week: HISTORICAL_DATA.week1.name,
-      totalMatches: HISTORICAL_DATA.week1.totalMatches,
+  const weeks = Object.keys(HISTORICAL_DATA);
+  
+  // Inversez ordinea săptămânilor pentru a avea cele mai recente primele (3, 2, 1)
+  return weeks.reverse().map(weekKey => {
+    const weekData = HISTORICAL_DATA[weekKey as keyof typeof HISTORICAL_DATA];
+    
+    return {
+      week: weekData.name,
+      totalMatches: weekData.totalMatches,
       players: Object.fromEntries(
-        Object.entries(HISTORICAL_DATA.week1.players).map(([name, data]) => [
+        Object.entries(weekData.players).map(([name, data]) => [
           name,
           {
             correct: data.correct,
@@ -201,28 +144,12 @@ function calculateWeeklyStats() {
           }
         ])
       )
-    },
-    {
-      week: HISTORICAL_DATA.week2.name,
-      totalMatches: HISTORICAL_DATA.week2.totalMatches,
-      players: Object.fromEntries(
-        Object.entries(HISTORICAL_DATA.week2.players).map(([name, data]) => [
-          name,
-          {
-            correct: data.correct,
-            total: data.total,
-            accuracy: data.accuracy,
-            points: data.points,
-            boosts: Math.floor(Math.random() * 2), // Simulat
-            reactions: Math.floor(Math.random() * 5) + 1 // Simulat
-          }
-        ])
-      )
-    }
-  ];
+    };
+  });
 }
 
 function calculateOverallStats(playerStats: any[]) {
+  const weeks = Object.keys(HISTORICAL_DATA);
   const totalPredictions = playerStats.reduce((sum, p) => sum + p.totalPredictions, 0);
   const totalCorrect = playerStats.reduce((sum, p) => sum + p.correctPredictions, 0);
   const averageAccuracy = totalPredictions > 0 ? (totalCorrect / totalPredictions) * 100 : 0;
@@ -247,27 +174,28 @@ function calculateOverallStats(playerStats: any[]) {
   let bestWeeklyPlayer = '';
   let bestWeeklyWeek = '';
   
-  // Verific săptămâna 1
-  Object.entries(HISTORICAL_DATA.week1.players).forEach(([name, data]) => {
-    if (data.accuracy > bestWeeklyAccuracy) {
-      bestWeeklyAccuracy = data.accuracy;
-      bestWeeklyPlayer = name;
-      bestWeeklyWeek = 'Săptămâna 1';
-    }
+  // Iterez prin toate săptămânile pentru a găsi cea mai bună acuratețe
+  weeks.forEach(weekKey => {
+    const weekData = HISTORICAL_DATA[weekKey as keyof typeof HISTORICAL_DATA];
+    
+    Object.entries(weekData.players).forEach(([name, data]) => {
+      if (data.accuracy > bestWeeklyAccuracy) {
+        bestWeeklyAccuracy = data.accuracy;
+        bestWeeklyPlayer = name;
+        bestWeeklyWeek = weekData.name;
+      }
+    });
   });
   
-  // Verific săptămâna 2
-  Object.entries(HISTORICAL_DATA.week2.players).forEach(([name, data]) => {
-    if (data.accuracy > bestWeeklyAccuracy) {
-      bestWeeklyAccuracy = data.accuracy;
-      bestWeeklyPlayer = name;
-      bestWeeklyWeek = 'Săptămâna 2';
-    }
-  });
+  // Calculez totalul de meciuri din toate săptămânile
+  const totalMatches = weeks.reduce((sum, weekKey) => {
+    const weekData = HISTORICAL_DATA[weekKey as keyof typeof HISTORICAL_DATA];
+    return sum + weekData.totalMatches;
+  }, 0);
   
   return {
-    totalWeeks: 2,
-    totalMatches: HISTORICAL_DATA.week1.totalMatches + HISTORICAL_DATA.week2.totalMatches,
+    totalWeeks: weeks.length,
+    totalMatches,
     totalPredictions,
     averageAccuracy,
     mostActivePlayer,
@@ -280,7 +208,7 @@ function calculateOverallStats(playerStats: any[]) {
 }
 
 function calculateHeadToHead(playerStats: any[]) {
-  // Generez comparații între jucători bazate pe performanțele lor
+  const weeks = Object.keys(HISTORICAL_DATA);
   const headToHead = [];
   
   for (let i = 0; i < playerStats.length; i++) {
@@ -292,11 +220,11 @@ function calculateHeadToHead(playerStats: any[]) {
       let p2Wins = 0;
       let draws = 0;
       
-      // Compar performanțele săptămânale
-      const weeks = [HISTORICAL_DATA.week1, HISTORICAL_DATA.week2];
-      weeks.forEach(week => {
-        const p1Data = week.players[p1.name as keyof typeof week.players];
-        const p2Data = week.players[p2.name as keyof typeof week.players];
+      // Compar performanțele săptămânale din toate săptămânile
+      weeks.forEach(weekKey => {
+        const weekData = HISTORICAL_DATA[weekKey as keyof typeof HISTORICAL_DATA];
+        const p1Data = weekData.players[p1.name as keyof typeof weekData.players];
+        const p2Data = weekData.players[p2.name as keyof typeof weekData.players];
         
         if (p1Data && p2Data) {
           if (p1Data.accuracy > p2Data.accuracy) p1Wins++;

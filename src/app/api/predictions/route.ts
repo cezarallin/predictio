@@ -8,7 +8,8 @@ function loadMatches() {
   try {
     const matchesPath = path.join(process.cwd(), 'src/data/matches.json');
     const matchesData = fs.readFileSync(matchesPath, 'utf8');
-    return JSON.parse(matchesData);
+    const parsedData = JSON.parse(matchesData);
+    return parsedData.matches || parsedData || [];
   } catch (error) {
     console.error('Error loading matches:', error);
     return [];

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, Calendar, Trophy, Trash2, RotateCcw, UserX, EyeOff } from 'lucide-react';
+import { CheckCircle, Calendar, Trophy, Trash2, RotateCcw, UserX, EyeOff, Sparkles, RotateCw, AlertTriangle, XCircle, Ban } from 'lucide-react';
 import { format } from 'date-fns';
 import LoadingSpinner from './LoadingSpinner';
+// import SuperSpinWheel from './SuperSpinWheel'; // HIDDEN TEMPORARILY
 
 interface Match {
   id: string;
@@ -15,6 +16,7 @@ interface Match {
   odds_x: number | null;
   odds_2: number | null;
   result: '1' | 'X' | '2' | null;
+  cancelled?: boolean;
 }
 
 interface User {
@@ -48,6 +50,17 @@ interface PlayerBoost {
   user_name: string;
 }
 
+// HIDDEN - Second Chance interface
+// interface SecondChance {
+//   id: number;
+//   user_id: number;
+//   match_id: string;
+//   old_prediction: '1' | 'X' | '2';
+//   new_prediction: '1' | 'X' | '2';
+//   user_name: string;
+//   created_at: string;
+// }
+
 interface PredictionTableProps {
   currentUser: { id: number; name: string };
 }
@@ -73,30 +86,102 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showReactionDropdown, setShowReactionDropdown] = useState<string | null>(null);
   const [showBoostConfirmModal, setShowBoostConfirmModal] = useState<string | null>(null); // matchId-userId format
+  const [showPlayTypeModal, setShowPlayTypeModal] = useState(false);
+  const [playTypes, setPlayTypes] = useState<Record<number, string>>({});
+  // HIDDEN - Second Chance state
+  // const [secondChances, setSecondChances] = useState<SecondChance[]>([]);
+  // const [hasUsedSecondChance, setHasUsedSecondChance] = useState(false);
+  // const [isSecondChanceAvailable, setIsSecondChanceAvailable] = useState(true);
+  // const [showSecondChanceModal, setShowSecondChanceModal] = useState<{
+  //   matchId: string;
+  //   currentPrediction: '1' | 'X' | '2';
+  //   newPrediction: '1' | 'X' | '2' | null;
+  // } | null>(null);
+  // HIDDEN TEMPORARILY - SuperSpin functionality
+  // const [showSuperSpinWheel, setShowSuperSpinWheel] = useState(false);
+  // const [hasSpinnedToday, setHasSpinnedToday] = useState(false);
+  // const [superSpinResult, setSuperSpinResult] = useState<any>(null);
 
   const loadData = useCallback(async () => {
     try {
+      // HIDDEN - Second Chance API calls commented out
       const [matchesRes, usersRes, predictionsRes, reactionsRes, boostsRes] = await Promise.all([
         fetch('/api/matches'),
         fetch('/api/users'),
         fetch('/api/predictions'),
         fetch('/api/reactions'),
-        fetch('/api/boosts'),
+        fetch('/api/boosts')
+        // fetch(`/api/second-chances?userId=${currentUser.id}`) // HIDDEN
+        // fetch(`/api/superspin?user=${encodeURIComponent(currentUser.name)}`) // HIDDEN TEMPORARILY
       ]);
 
+      // HIDDEN - Second Chance data processing commented out
       const [matchesData, usersData, predictionsData, reactionsData, boostsData] = await Promise.all([
         matchesRes.json(),
         usersRes.json(),
         predictionsRes.json(),
         reactionsRes.json(),
-        boostsRes.json(),
+        boostsRes.json()
+        // secondChancesRes.json() // HIDDEN
+        // superSpinRes.json() // HIDDEN TEMPORARILY
       ]);
 
       setMatches(matchesData.matches || []);
-      setUsers(usersData.users || []); // This already excludes admin users
+      const userData = usersData.users || [];
+      setUsers(userData); // This already excludes admin users
       setPredictions(predictionsData.predictions || []);
       setReactions(reactionsData.reactions || []);
       setPlayerBoosts(boostsData.boosts || []);
+      
+      // Load play types after users are available
+      if (userData.length > 0) {
+        const promises = userData.map(async (user: any) => {
+          try {
+            const response = await fetch(`/api/play-type?userId=${user.id}`);
+            const data = await response.json();
+            return { userId: user.id, playType: data.playType || 'fun' };
+          } catch (error) {
+            console.error(`Failed to load play type for user ${user.id}:`, error);
+            return { userId: user.id, playType: 'fun' };
+          }
+        });
+        
+        const results = await Promise.all(promises);
+        const playTypesObj = results.reduce((acc, { userId, playType }) => {
+          acc[userId] = playType;
+          return acc;
+        }, {} as Record<number, string>);
+        
+        setPlayTypes(playTypesObj);
+      }
+      
+      // HIDDEN - Second chance data setting commented out
+      // setHasUsedSecondChance(secondChancesData.hasUsedSecondChance || false);
+      // setIsSecondChanceAvailable(secondChancesData.isSecondChanceAvailable !== false);
+      
+      // Set super spin data - HIDDEN TEMPORARILY
+      // setHasSpinnedToday(superSpinData.hasSpinnedToday || false);
+      // if (superSpinData.spins && superSpinData.spins.length > 0) {
+      //   const lastSpin = superSpinData.spins[0];
+      //   // Map prize types to proper messages
+      //   const getPrizeDisplayMessage = (prizeType: string) => {
+      //     switch (prizeType) {
+      //       case 'double_boost':
+      //         return 'Double Boost (2x puncte)!';
+      //       case 'triple_boost': 
+      //         return 'Triple Boost (3x puncte)!';
+      //       case 'no_win':
+      //         return 'Necâștigător. Încearcă mâine!';
+      //       case 'extra_point':
+      //         return '+1 Punct extra!';
+      //       case 'five_lei':
+      //         return '5 lei de la ceilalți jucători! 💰';
+      //       default:
+      //         return 'Premiu necunoscut';
+      //     }
+      //   };
+      //   setSuperSpinResult({ prize: { type: lastSpin.prize_type, message: getPrizeDisplayMessage(lastSpin.prize_type) } });
+      // }
       
       // Check if current user is admin
       const allUsers = usersData.allUsers || [];
@@ -137,6 +222,30 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     }));
   };
 
+  const generateRandomPredictions = () => {
+    if (!isCurrentUserAdmin) {
+      // Get matches without results (available for predictions)
+      const availableMatches = matches.filter(match => !match.result);
+      const randomPredictions: Record<string, '1' | 'X' | '2'> = {};
+      
+      const options: ('1' | 'X' | '2')[] = ['1', 'X', '2'];
+      
+      availableMatches.forEach(match => {
+        // Don't override if user already has a submitted prediction
+        const hasSubmitted = hasUserSubmittedPrediction(match.id, currentUser.id);
+        if (!hasSubmitted) {
+          const randomIndex = Math.floor(Math.random() * options.length);
+          randomPredictions[match.id] = options[randomIndex];
+        }
+      });
+      
+      setLocalPredictions(prev => ({
+        ...prev,
+        ...randomPredictions
+      }));
+    }
+  };
+
   const submitAllPredictions = async () => {
     if (Object.keys(localPredictions).length === 0) {
       alert('Nu ai nicio predicție de trimis!');
@@ -157,6 +266,8 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
       if (response.ok) {
         setLocalPredictions({});
         loadData();
+        // Show play type selection modal after successful submission
+        setShowPlayTypeModal(true);
       } else {
         const errorData = await response.json();
         alert(`❌ Eroare: ${errorData.error}`);
@@ -166,6 +277,31 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
       alert('❌ Nu s-au putut trimite predicțiile. Încearcă din nou.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePlayTypeSelection = async (playType: 'fun' | 'miza') => {
+    try {
+      const response = await fetch('/api/play-type', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          playType
+        }),
+      });
+
+      if (response.ok) {
+        setShowPlayTypeModal(false);
+        // Optionally show a success message
+        console.log(`Tip de joc selectat: ${playType}`);
+      } else {
+        const errorData = await response.json();
+        alert(`❌ Eroare: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to update play type:', error);
+      alert('❌ Nu s-a putut actualiza tipul de joc. Încearcă din nou.');
     }
   };
 
@@ -354,7 +490,99 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
       }
     } catch (error) {
       console.error('Failed to clear users:', error);
-      alert('❌ Failed to clear users. Please try again.');
+    }
+  };
+
+  const cancelMatch = async (matchId: string) => {
+    const match = matches.find(m => m.id === matchId);
+    if (!match) {
+      alert('❌ Meciul nu a fost găsit');
+      return;
+    }
+
+    // Get all predictions for this match
+    const matchPredictions = predictions.filter(p => p.match_id === matchId);
+    
+    if (matchPredictions.length === 0) {
+      alert('❌ Nu există predicții pentru acest meci');
+      return;
+    }
+
+    // Check if all predictions are the same
+    const firstPrediction = matchPredictions[0].prediction;
+    const allSamePrediction = matchPredictions.every(p => p.prediction === firstPrediction);
+    
+    if (!allSamePrediction) {
+      const predictionSummary = matchPredictions.map(p => `${p.user_name}: ${p.prediction}`).join(', ');
+      alert(`❌ Nu toate predicțiile sunt identice.\n\nPredicții: ${predictionSummary}\n\nMeciul poate fi anulat doar când toți jucătorii au aceeași predicție.`);
+      return;
+    }
+
+    if (!confirm(`⚠️ Ești sigur că vrei să anulezi meciul?\n\n${match.home_team} vs ${match.away_team}\n\nToți ${matchPredictions.length} jucătorii au predicția: ${firstPrediction}\n\nAceastă acțiune nu poate fi anulată!`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/cancel-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminUserId: currentUser.name,
+          matchId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`✅ ${data.message}`);
+        loadData(); // Reload data to reflect changes
+      } else {
+        const errorData = await response.json();
+        alert(`❌ Error: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to cancel match:', error);
+      alert('❌ Nu s-a putut anula meciul. Încearcă din nou.');
+    }
+  };
+
+  const uncancelMatch = async (matchId: string) => {
+    const match = matches.find(m => m.id === matchId);
+    if (!match) {
+      alert('❌ Meciul nu a fost găsit');
+      return;
+    }
+
+    if (!match.cancelled) {
+      alert('❌ Meciul nu este anulat');
+      return;
+    }
+
+    if (!confirm(`⚠️ Ești sigur că vrei să dezanulezi meciul?\n\n${match.home_team} vs ${match.away_team}\n\nCotele utilizatorilor vor fi restaurate în calculul scorului.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/uncancel-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminUserId: currentUser.name,
+          matchId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`✅ ${data.message}`);
+        loadData(); // Reload data to reflect changes
+      } else {
+        const errorData = await response.json();
+        alert(`❌ Error: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to uncancel match:', error);
+      alert('❌ Nu s-a putut dezanula meciul. Încearcă din nou.');
     }
   };
 
@@ -428,6 +656,52 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
 
   const getCurrentUserBoostMatch = (): string | null => {
     return getPlayerBoostMatch(currentUser.id);
+  };
+
+  // HIDDEN - Second Chance function commented out
+  // const useSecondChance = async (matchId: string, oldPrediction: '1' | 'X' | '2', newPrediction: '1' | 'X' | '2') => {
+  //   try {
+  //     const response = await fetch('/api/second-chances', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         userId: currentUser.id,
+  //         matchId,
+  //         oldPrediction,
+  //         newPrediction,
+  //       }),
+  //     });
+  //
+  //     if (response.ok) {
+  //       loadData(); // Reload data to reflect changes
+  //       setShowSecondChanceModal(null);
+  //     } else {
+  //       const errorData = await response.json();
+  //       alert(`❌ ${errorData.error}`);
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to use second chance:', error);
+  //     alert('❌ Nu s-a putut folosi Second Chance. Încearcă din nou.');
+  //   }
+  // };
+
+  // HIDDEN - Second Chance check function commented out
+  // const canUseSecondChance = (): boolean => {
+  //   return !isCurrentUserAdmin && isSecondChanceAvailable && !hasUsedSecondChance;
+  // };
+
+  // HIDDEN TEMPORARILY - SuperSpin handler
+  // const handleSuperSpinComplete = (result: any) => {
+  //   setSuperSpinResult(result);
+  //   setHasSpinnedToday(true);
+  //   setShowSuperSpinWheel(false);
+  //   
+  //   // Refresh data to get updated spin status
+  //   loadData();
+  // };
+
+  const isMobileDevice = () => {
+    return window.innerWidth <= 768;
   };
 
   const getUserPrediction = (matchId: string, userId: number): '1' | 'X' | '2' | null => {
@@ -531,8 +805,8 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
       let playedMatchesPredictedBy = 0;
       
       matches.forEach(match => {
-        // Only consider matches that have been played (have results)
-        if (match.result) {
+        // Only consider matches that have been played (have results) and are not cancelled
+        if (match.result && !match.cancelled) {
           const userPrediction = getUserPrediction(match.id, user.id);
           if (userPrediction) {
             playedMatchesPredictedBy++;
@@ -556,8 +830,8 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
   };
 
   const hasCurrentUserCompletedAllPredictions = (): { completed: boolean; missing: number; total: number } => {
-    // Get matches without results (available for predictions)
-    const availableMatches = matches.filter(match => !match.result);
+    // Get matches without results (available for predictions) and not cancelled
+    const availableMatches = matches.filter(match => !match.result && !match.cancelled);
     
     // Count how many of these matches the current user has SUBMITTED (not local)
     let submittedCount = 0;
@@ -574,6 +848,22 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
       missing: availableMatches.length - submittedCount,
       total: availableMatches.length
     };
+  };
+
+  const hasUserCompletedAllPredictions = (userId: number): boolean => {
+    // Get matches without results (available for predictions) and not cancelled
+    const availableMatches = matches.filter(match => !match.result && !match.cancelled);
+    
+    // Count how many of these matches the user has SUBMITTED
+    let submittedCount = 0;
+    availableMatches.forEach(match => {
+      const hasSubmitted = hasUserSubmittedPrediction(match.id, userId);
+      if (hasSubmitted) {
+        submittedCount++;
+      }
+    });
+
+    return submittedCount === availableMatches.length;
   };
 
 
@@ -756,6 +1046,166 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
         
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Random predictions banner - only show if user hasn't completed all predictions */}
+            {!predictionStatus.completed && (
+              <div className="superbet-card" style={{ 
+                padding: '16px 20px', 
+                background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+                border: '2px solid #10b981',
+                borderRadius: '12px'
+              }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: '0 3px 8px rgba(16, 185, 129, 0.4)'
+                }}>
+                  <Sparkles style={{ width: '20px', height: '20px', color: 'white' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    fontSize: '16px', 
+                    fontWeight: 600, 
+                    color: '#065f46',
+                    marginBottom: '4px'
+                  }}>
+                    🎲 Te simți norocos astăzi?
+                  </div>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    color: '#047857',
+                    lineHeight: 1.4,
+                    marginBottom: '12px'
+                  }}>
+                    Lasă norocul să decidă! Generează predicții random pentru toate meciurile și ajustează-le după cum simți! 🍀
+                  </div>
+                  <button
+                    onClick={generateRandomPredictions}
+                    style={{
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isMobileDevice()) {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(16, 185, 129, 0.4)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isMobileDevice()) {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(16, 185, 129, 0.3)';
+                      }
+                    }}
+                  >
+                    <span style={{ fontSize: '16px' }}>🎲</span>
+                    Generează Predicții Random!
+                  </button>
+                </div>
+              </div>
+              </div>
+            )}
+
+            {/* HIDDEN TEMPORARILY - SuperSpin banner - show always for non-admin users */}
+            {false && !isCurrentUserAdmin && (
+              <div className={`superbet-card superspin-banner-card ${hasSpinnedToday ? 'superspin-disabled' : 'superspin-active'}`} style={{ 
+                padding: '16px 20px', 
+                background: hasSpinnedToday 
+                  ? 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)' 
+                  : 'linear-gradient(135deg, #ffffff 0%, #fee2e2 30%, #fca5a5 60%, #dc2626 100%)',
+                border: hasSpinnedToday ? '2px solid #9ca3af' : '3px solid #dc2626',
+                borderRadius: '12px'
+              }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '20px',
+                  background: hasSpinnedToday 
+                    ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)'
+                    : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: hasSpinnedToday 
+                    ? '0 3px 8px rgba(156, 163, 175, 0.4)'
+                    : '0 3px 8px rgba(220, 38, 38, 0.4)'
+                }}>
+                  <span style={{ fontSize: '20px' }}>{hasSpinnedToday ? '🎰' : '🎯'}</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    fontSize: '16px', 
+                    fontWeight: 600, 
+                    color: hasSpinnedToday ? '#4b5563' : '#b91c1c',
+                    marginBottom: '4px'
+                  }}>
+                    {hasSpinnedToday ? '🎰 Ai învârtit roata etapa asta!' : '🎯 Predictio Wheel - Roata Norocului!'}
+                  </div>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    color: hasSpinnedToday ? '#6b7280' : '#7f1d1d',
+                    marginBottom: '8px' 
+                  }}>
+                    {hasSpinnedToday 
+                      ? `${superSpinResult?.prize?.type === 'no_win' ? 'Nu ai câștigat nimic.' : `Ai câștigat: ${superSpinResult?.prize?.message || 'Premiu necunoscut'}!`} Revino la următoarea etapă! 🌟`
+                      : 'Învârte roata magică și câștigă boost-uri, puncte extra, 5 lei sau alte premii!'
+                    }
+                  </div>
+                  {!hasSpinnedToday && (
+                    <button
+                      onClick={() => setShowSuperSpinWheel(true)}
+                      style={{
+                        background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)',
+                      color: 'white',
+                      border: '2px solid white',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 3px 8px rgba(185, 28, 28, 0.4)',
+                      textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                    }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(185, 28, 28, 0.6)';
+                        e.currentTarget.style.background = 'linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 3px 8px rgba(185, 28, 28, 0.4)';
+                        e.currentTarget.style.background = 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)';
+                      }}
+                  >
+                      <span style={{ fontSize: '16px' }}>🎯</span>
+                      Învârte Predictio Wheel!
+                    </button>
+                  )}
+                </div>
+              </div>
+              </div>
+            )}
+            
             {/* Local predictions banner */}
             {localPredictionsCount > 0 && (
               <div className="superbet-card" style={{ 
@@ -855,6 +1305,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                 <th style={{ textAlign: 'center', width: '90px' }}>Cota</th>
                 <th style={{ textAlign: 'center', width: '80px' }}>Corecte</th>
                 <th style={{ textAlign: 'center', width: '80px' }}>Acuratețe</th>
+                <th style={{ textAlign: 'center', width: '80px' }}>Tip Joc</th>
               </tr>
             </thead>
             <tbody>
@@ -920,7 +1371,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                         color: 'var(--superbet-text)',
                         fontSize: '13px'
                       }}>
-                        {player.totalOdds.toFixed(2)}
+                        {/* Show total odds only if current user has completed all predictions OR for the current user themselves */}
+                        {(hasCurrentUserCompletedAllPredictions().completed || isCurrentUser) && hasUserCompletedAllPredictions(player.userId) 
+                          ? player.totalOdds.toFixed(2) 
+                          : '?'}
                       </span>
                     </td>
                     <td style={{ textAlign: 'center' }}>
@@ -946,6 +1400,27 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                         {player.accuracy.toFixed(0)}%
                       </div>
                     </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <div style={{
+                        padding: '3px 8px',
+                        borderRadius: '10px',
+                        background: playTypes[player.userId] === 'miza' ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' : 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+                        color: playTypes[player.userId] === 'miza' ? '#991b1b' : '#065f46',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                        border: `1px solid ${playTypes[player.userId] === 'miza' ? '#dc2626' : '#10b981'}`,
+                        minWidth: '50px'
+                      }}>
+                        {playTypes[player.userId] === 'miza' ? '💰' : '🎉'}
+                        <span style={{ fontSize: '10px' }}>
+                          {playTypes[player.userId] === 'miza' ? 'Mizã' : 'Fun'}
+                        </span>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -969,7 +1444,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
           }}>
             <span style={{ fontSize: '20px' }}>🚀</span>
             <span style={{ 
-              fontSize: '16px', 
+              fontSize: '14px', 
               color: '#92400e', 
               fontWeight: 600,
               lineHeight: 1.4
@@ -986,7 +1461,20 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
           <table className="superbet-table">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', minWidth: '160px' }} className="match-info-header">Meci</th>
+                <th 
+                  style={{ 
+                    textAlign: 'left', 
+                    minWidth: '160px',
+                    position: 'sticky',
+                    left: 0,
+                    backgroundColor: 'var(--superbet-card-bg)',
+                    zIndex: 10,
+                    borderRight: '2px solid var(--superbet-border)',
+                    boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)'
+                  }} 
+                >
+                  Meci
+                </th>
                 {users.map(user => (
                   <th key={user.id} style={{ textAlign: 'center', minWidth: '80px' }} title={user.name}>
                     {user.name.length > 8 ? `${user.name.substring(0, 8)}...` : user.name}
@@ -1015,22 +1503,65 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                     })
                   }}
                   onMouseEnter={(e) => {
-                    if (canBoostThisMatch) {
+                    if (canBoostThisMatch && !isMobileDevice()) {
                       e.currentTarget.style.backgroundColor = 'rgba(251, 191, 36, 0.15)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (canBoostThisMatch) {
+                    if (canBoostThisMatch && !isMobileDevice()) {
                       e.currentTarget.style.backgroundColor = 'transparent';
                     }
                   }}
                 >
-                  <td className="match-info-cell">
-                    <div>
-                      <div style={{ fontWeight: 600, color: 'var(--superbet-text)', marginBottom: '4px' }}>
+                  <td style={{
+                    position: 'sticky',
+                    left: 0,
+                    backgroundColor: match.cancelled ? 'rgba(239, 68, 68, 0.1)' : 'var(--superbet-card-bg)',
+                    zIndex: 9,
+                    borderRight: '2px solid var(--superbet-border)',
+                    minWidth: '160px',
+                    boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)',
+                    opacity: match.cancelled ? 0.7 : 1
+                  }}>
+                    {match.cancelled && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        padding: '2px 6px',
+                        borderRadius: '12px',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)',
+                        zIndex: 10
+                      }}>
+                        <Ban size={10} />
+                        ANULAT
+                      </div>
+                    )}
+                    <div style={{ 
+                      filter: match.cancelled ? 'grayscale(50%)' : 'none',
+                      transition: 'all 0.2s ease'
+                    }}>
+                      <div style={{ 
+                        fontWeight: 600, 
+                        color: match.cancelled ? '#6b7280' : 'var(--superbet-text)', 
+                        marginBottom: '4px',
+                        textDecoration: match.cancelled ? 'line-through' : 'none'
+                      }}>
                         {match.home_team} <span style={{ fontWeight: 400, fontSize: '0.85em', color: 'var(--superbet-gray)' }}>vs</span> {match.away_team}
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--superbet-gray)', marginBottom: '6px' }} className="match-league-date">
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: match.cancelled ? '#9ca3af' : 'var(--superbet-gray)', 
+                        marginBottom: '6px' 
+                      }} className="match-league-date">
                         {match.league} • {format(new Date(new Date(match.match_date).getTime() - 60 * 60 * 1000), 'dd MMM, HH:mm')}
                       </div>
                       {/* Odds under match details */}
@@ -1040,13 +1571,22 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                         alignItems: 'center',
                         flexWrap: 'nowrap'
                       }} className="odds-row">
-                        <div className="odds-container">
+                        <div className="odds-container" style={{ 
+                          opacity: match.cancelled ? 0.5 : 1,
+                          color: match.cancelled ? '#9ca3af' : 'var(--superbet-text)'
+                        }}>
                           {match.odds_1?.toFixed(2) || '-'}
                         </div>
-                        <div className="odds-container">
+                        <div className="odds-container" style={{ 
+                          opacity: match.cancelled ? 0.5 : 1,
+                          color: match.cancelled ? '#9ca3af' : 'var(--superbet-text)'
+                        }}>
                           {match.odds_x?.toFixed(2) || '-'}
                         </div>
-                        <div className="odds-container">
+                        <div className="odds-container" style={{ 
+                          opacity: match.cancelled ? 0.5 : 1,
+                          color: match.cancelled ? '#9ca3af' : 'var(--superbet-text)'
+                        }}>
                           {match.odds_2?.toFixed(2) || '-'}
                         </div>
                       </div>
@@ -1064,7 +1604,11 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                     const shouldHidePredictions = !isCurrentUserAdmin && !predictionStatus.completed && !isCurrentUser;
                     
                     return (
-                      <td key={user.id} style={{ textAlign: 'center' }}>
+                      <td key={user.id} style={{ 
+                        textAlign: 'center',
+                        backgroundColor: match.cancelled ? 'rgba(239, 68, 68, 0.1)' : undefined,
+                        opacity: match.cancelled ? 0.7 : 1
+                      }}>
                         {isCurrentUser && !match.result && !hasSubmittedPrediction ? (
                           // Show prediction buttons for current user if match has no result and no submitted prediction
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
@@ -1113,18 +1657,70 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                                 }`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (!isCurrentUser && !isCurrentUserAdmin && userPrediction) {
+                                  // HIDDEN - Second Chance functionality disabled
+                                  if (isCurrentUser && false && userPrediction && !match.result) {
+                                    // Current user can use second chance on their own prediction - DISABLED
+                                    // setShowSecondChanceModal({
+                                    //   matchId: match.id,
+                                    //   currentPrediction: userPrediction,
+                                    //   newPrediction: null
+                                    // });
+                                  } else if (!isCurrentUser && !isCurrentUserAdmin && userPrediction) {
+                                    // Other users - show reaction dropdown
                                     const dropdownKey = `${match.id}-${user.id}`;
                                     setShowReactionDropdown(showReactionDropdown === dropdownKey ? null : dropdownKey);
                                   }
                                 }}
                                 style={{ 
-                                  cursor: (!isCurrentUser && !isCurrentUserAdmin && userPrediction) ? 'pointer' : 'default',
+                                  cursor: (false && userPrediction && !match.result) || // HIDDEN - Second Chance disabled
+                                          (!isCurrentUser && !isCurrentUserAdmin && userPrediction) ? 'pointer' : 'default',
                                   transition: 'all 0.2s ease',
-                                  position: 'relative'
+                                  position: 'relative',
+                                  touchAction: 'manipulation', // Better touch handling on mobile
+                                  minHeight: '32px', // Larger touch target on mobile
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  ...(isCurrentUser && false && userPrediction && !match.result && {
+                                    boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.3)',
+                                    borderRadius: '4px'
+                                  })
+                                }}
+                                onTouchStart={(e) => {
+                                  // Better mobile touch feedback
+                                  if (isCurrentUser && false && userPrediction && !match.result) {
+                                    e.currentTarget.style.transform = 'scale(0.95)';
+                                    e.currentTarget.style.backgroundColor = 'rgba(139, 92, 246, 0.1)';
+                                  }
+                                }}
+                                onTouchEnd={(e) => {
+                                  // Reset mobile touch feedback
+                                  if (isCurrentUser && false && userPrediction && !match.result) {
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                    e.currentTarget.style.backgroundColor = '';
+                                  }
                                 }}
                               >
                                 {userPrediction || '-'}
+                                {/* Show Second Chance indicator for current user on mobile */}
+                                {isCurrentUser && false && userPrediction && !match.result && window.innerWidth <= 768 && (
+                                  <span style={{
+                                    position: 'absolute',
+                                    top: '-6px',
+                                    left: '-6px',
+                                    width: '12px',
+                                    height: '12px',
+                                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '8px',
+                                    animation: 'pulse 2s infinite'
+                                  }}>
+                                    ⚡
+                                  </span>
+                                )}
                                 {/* Show boost indicator for this user - only if current user has also chosen a boost */}
                                 {getPlayerBoostMatch(user.id) === match.id && getCurrentUserBoostMatch() && (
                                   <span style={{ 
@@ -1161,7 +1757,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                                   gridTemplateColumns: 'repeat(6, 1fr)',
                                   gridTemplateRows: 'repeat(1, 1fr)',
                                   gap: '4px',
-                                  minWidth: window.innerWidth <= 768 ? '220px' : '240px'
+                                  minWidth: window.innerWidth <= 768 ? '200px' : '240px'
                                 }}
                                 onMouseDown={(e) => {
                                   e.stopPropagation();
@@ -1220,7 +1816,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                             )}
                             
                             {/* Show existing reactions - Instagram/Facebook style */}
-                            {!isCurrentUser && !isCurrentUserAdmin && userPrediction && (() => {
+                            {!isCurrentUserAdmin && userPrediction && (() => {
                               const reactionCounts = getReactionCounts(match.id, user.id);
                               const activeReactions = REACTION_OPTIONS.filter(option => reactionCounts[option.type] > 0)
                                 .sort((a, b) => reactionCounts[b.type] - reactionCounts[a.type]); // Sort by count, most popular first
@@ -1235,7 +1831,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                               return (
                                 <div style={{ 
                                   position: 'absolute',
-                                  bottom: window.innerWidth <= 768 ? '-12px' : '-8px',
+                                  bottom: window.innerWidth <= 768 ? '-12px' : '-16px',
                                   right: window.innerWidth <= 768 ? '-4px' : '-2px',
                                   background: hasUserReaction ? '#fbbf24' : 'var(--reaction-bg, white)',
                                   color: hasUserReaction ? 'white' : 'var(--reaction-text, #6b7280)',
@@ -1248,7 +1844,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                                   gap: window.innerWidth <= 768 ? '2px' : '3px',
                                   border: hasUserReaction ? 'none' : '1px solid var(--reaction-border, #e5e7eb)',
                                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                  zIndex: 10,
+                                  zIndex: 5,
                                   minHeight: window.innerWidth <= 768 ? '16px' : '20px'
                                 }}>
                                   {/* Show top emoji reactions */}
@@ -1331,14 +1927,18 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                   })}
 
                   {/* Result column */}
-                  <td style={{ textAlign: 'center' }}>
+                  <td style={{ 
+                    textAlign: 'center',
+                    backgroundColor: match.cancelled ? 'rgba(239, 68, 68, 0.1)' : undefined,
+                    opacity: match.cancelled ? 0.7 : 1
+                  }}>
                     {match.result ? (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexDirection: 'column' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <CheckCircle style={{ width: '16px', height: '16px', color: '#10b981' }} />
                           <span style={{ fontWeight: 600, color: '#10b981' }}>{match.result}</span>
                         </div>
-                        {isCurrentUserAdmin && (
+                        {isCurrentUserAdmin && !match.cancelled && (
                           <div style={{ display: 'flex', gap: '2px', marginTop: '4px' }}>
                             {(['1', 'X', '2'] as const).map(option => (
                               <button
@@ -1388,39 +1988,182 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                       </div>
                     ) : (
                       <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                        {(['1', 'X', '2'] as const).map(option => (
-                          <button
-                            key={option}
-                            onClick={(e) => {
-              e.stopPropagation();
-              void (isCurrentUserAdmin ? overrideResult(match.id, option) : setMatchResult(match.id, option));
-            }}
-                            style={{ 
-                              minWidth: '28px', 
-                              minHeight: '28px', 
-                              fontSize: '12px',
-                              padding: '6px 8px',
-                              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                              boxShadow: '0 2px 4px rgba(245, 158, 11, 0.2)'
-                            }}
+                        {match.cancelled ? (
+                          /* Show disabled icons for canceled matches */
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            gap: '4px', 
+                            flexDirection: 'column' 
+                          }}>
+                            {/* Show disabled result buttons */}
+                            <div style={{ display: 'flex', gap: '2px' }}>
+                              {(['1', 'X', '2'] as const).map(option => (
+                                <div
+                                  key={option}
+                                  style={{ 
+                                    width: '24px', 
+                                    height: '24px', 
+                                    fontSize: '10px',
+                                    padding: '0',
+                                    background: '#f3f4f6',
+                                    color: '#9ca3af',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: '50%',
+                                    fontWeight: 600,
+                                    cursor: 'not-allowed',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    position: 'relative'
+                                  }}
+                                  title="Meciul este anulat - nu se poate adăuga rezultat"
+                                >
+                                  {option}
+                                  <div style={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%) rotate(45deg)',
+                                    width: '20px',
+                                    height: '1px',
+                                    backgroundColor: '#ef4444',
+                                    zIndex: 1
+                                  }} />
+                                </div>
+                              ))}
+                            </div>
+                            {/* Show uncancel button for admin */}
+                            {isCurrentUserAdmin && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  uncancelMatch(match.id);
+                                }}
+                                style={{ 
+                                  fontSize: '10px',
+                                  padding: '4px 8px',
+                                  marginTop: '4px',
+                                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                                title="Dezanulează meciul pentru a permite adăugarea rezultatelor"
+                                onMouseEnter={(e) => {
+                                  if (!isMobileDevice()) {
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(16, 185, 129, 0.3)';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isMobileDevice()) {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(16, 185, 129, 0.2)';
+                                  }
+                                }}
+                              >
+                                <RotateCcw style={{ width: '12px', height: '12px' }} />
+                                Dezanulează
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          /* Normal result buttons for non-canceled matches */
+                          <>
+                            {(['1', 'X', '2'] as const).map(option => (
+                              <button
+                                key={option}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void (isCurrentUserAdmin ? overrideResult(match.id, option) : setMatchResult(match.id, option));
+                                }}
+                                style={{ 
+                                  width: '32px', 
+                                  height: '32px', 
+                                  fontSize: '12px',
+                                  padding: '0',
+                                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '50%',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  boxShadow: '0 2px 4px rgba(245, 158, 11, 0.2)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isMobileDevice()) {
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(245, 158, 11, 0.3)';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isMobileDevice()) {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(245, 158, 11, 0.2)';
+                                  }
+                                }}
+                              >
+                                {option}
+                              </button>
+                            ))}
+                            
+                            {/* Admin Cancel Match Button - only visible to admin when no result */}
+                            {isCurrentUserAdmin && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  cancelMatch(match.id);
+                                }}
+                                style={{ 
+                                  width: '32px', 
+                                  height: '32px', 
+                                  fontSize: '10px',
+                                  padding: '0',
+                                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '50%',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  boxShadow: '0 2px 4px rgba(220, 38, 38, 0.2)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  marginLeft: '8px'
+                                }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'translateY(-1px)';
-                              e.currentTarget.style.boxShadow = '0 4px 8px rgba(245, 158, 11, 0.3)';
+                              if (!isMobileDevice()) {
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 4px 8px rgba(220, 38, 38, 0.3)';
+                              }
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.boxShadow = '0 2px 4px rgba(245, 158, 11, 0.2)';
+                              if (!isMobileDevice()) {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 2px 4px rgba(220, 38, 38, 0.2)';
+                              }
                             }}
+                            title="Anulează meciul (doar dacă toți jucătorii au aceeași predicție)"
                           >
-                            {option}
+                            🚫
                           </button>
-                        ))}
+                        )}
+                          </>
+                        )}
                       </div>
                     )}
                   </td>
@@ -1486,7 +2229,400 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
         </div>
       )}
 
-      {/* Boost Confirmation Modal */}
+      {/* HIDDEN - Modern Second Chance Confirmation Modal */}
+      {false && showSecondChanceModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.8)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px',
+          animation: 'modalFadeIn 0.3s ease-out'
+        }}>
+          <div style={{
+            background: 'var(--modal-bg)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '16px',
+            padding: '20px',
+            maxWidth: '320px',
+            width: '100%',
+            boxShadow: `
+              0 20px 40px rgba(139, 92, 246, 0.15),
+              0 8px 16px rgba(0, 0, 0, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1)
+            `,
+            textAlign: 'center',
+            border: '1px solid rgba(139, 92, 246, 0.2)',
+            position: 'relative',
+            overflow: 'hidden',
+            animation: 'modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }}>
+            {/* Decorative background gradient */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '80px',
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)',
+              borderRadius: '16px 16px 0 0',
+              zIndex: -1
+            }} />
+            
+            {(() => {
+              const selectedMatch = matches.find(m => m.id === showSecondChanceModal.matchId);
+              return selectedMatch ? (
+                <>
+                  {/* Header Section */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      marginBottom: '12px'
+                    }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 16px rgba(139, 92, 246, 0.4)',
+                        animation: 'pulseGlow 2s ease-in-out infinite alternate'
+                      }}>
+                        <RotateCw style={{ 
+                          width: '16px', 
+                          height: '16px', 
+                          color: 'white',
+                          animation: 'spin 3s linear infinite' 
+                        }} />
+                      </div>
+                    </div>
+                    <h3 style={{
+                      fontSize: '20px',
+                      fontWeight: '700',
+                      color: 'var(--modal-text)',
+                      margin: '0 0 6px 0',
+                      letterSpacing: '-0.025em'
+                    }}>
+                      Second Chance
+                    </h3>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                      color: 'white',
+                      padding: '4px 12px',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)',
+                      animation: 'bounce 2s ease-in-out infinite'
+                    }}>
+                      <span>🎯</span>
+                      <span>Schimbă predicția ta!</span>
+                    </div>
+                  </div>
+
+                  {/* Match Info */}
+                  <div style={{
+                    background: 'var(--modal-card-bg)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    margin: '16px 0',
+                    border: '1px solid var(--modal-border)'
+                  }}>
+                    <div style={{
+                      fontSize: '11px',
+                      color: 'var(--modal-text-muted)',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      marginBottom: '6px'
+                    }}>
+                      Meciul selectat
+                    </div>
+                    <div style={{
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      color: 'var(--modal-text)',
+                      marginBottom: '6px',
+                      lineHeight: '1.3'
+                    }}>
+                      {selectedMatch.home_team}
+                      <span style={{ 
+                        color: '#8b5cf6', 
+                        margin: '0 6px',
+                        fontSize: '12px'
+                      }}>
+                        ⚡
+                      </span>
+                      {selectedMatch.away_team}
+                    </div>
+                    <div style={{
+                      fontSize: '11px',
+                      color: 'var(--modal-text-muted)',
+                      fontWeight: '500'
+                    }}>
+                      {selectedMatch.league}
+                    </div>
+                  </div>
+
+                  {/* Prediction Change Section */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    margin: '20px 0',
+                    flexWrap: 'wrap'
+                  }}>
+                    {/* Current Prediction */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <span style={{ 
+                        fontSize: '10px', 
+                        fontWeight: '600',
+                        color: 'var(--modal-text-muted)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                      }}>
+                        Actuala
+                      </span>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '16px',
+                        fontWeight: '700',
+                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                        border: '1px solid rgba(255, 255, 255, 0.3)'
+                      }}>
+                        {showSecondChanceModal.currentPrediction}
+                      </div>
+                    </div>
+
+                    {/* Arrow */}
+                    <div style={{
+                      fontSize: '16px',
+                      color: '#8b5cf6',
+                      animation: 'pulse 2s ease-in-out infinite'
+                    }}>
+                      →
+                    </div>
+
+                    {/* New Prediction Options */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <span style={{ 
+                        fontSize: '10px', 
+                        fontWeight: '600',
+                        color: 'var(--modal-text-muted)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                      }}>
+                        Noua predicție
+                      </span>
+                      <div style={{
+                        display: 'flex',
+                        gap: '6px'
+                      }}>
+                        {(['1', 'X', '2'] as const).map(option => (
+                          <button
+                            key={option}
+                            onClick={() => {
+                              setShowSecondChanceModal(prev => prev ? {
+                                ...prev,
+                                newPrediction: option
+                              } : null);
+                            }}
+                            style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              fontWeight: '700',
+                              border: '2px solid',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              ...(showSecondChanceModal.newPrediction === option ? {
+                                background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
+                                color: 'white',
+                                borderColor: '#7c3aed',
+                                boxShadow: '0 4px 16px rgba(139, 92, 246, 0.4), 0 0 0 2px rgba(139, 92, 246, 0.2)',
+                                transform: 'scale(1.05)'
+                              } : {
+                                background: 'var(--modal-input-bg)',
+                                color: 'var(--modal-text)',
+                                borderColor: 'var(--modal-border)',
+                                boxShadow: '0 2px 6px rgba(148, 163, 184, 0.15)'
+                              })
+                            }}
+                            onMouseEnter={(e) => {
+                              if (showSecondChanceModal.newPrediction !== option) {
+                                e.currentTarget.style.borderColor = '#8b5cf6';
+                                e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)';
+                                e.currentTarget.style.transform = 'scale(1.02)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.2)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (showSecondChanceModal.newPrediction !== option) {
+                                e.currentTarget.style.borderColor = 'var(--modal-border)';
+                                e.currentTarget.style.background = 'var(--modal-input-bg)';
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.boxShadow = '0 2px 6px rgba(148, 163, 184, 0.15)';
+                              }
+                            }}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Warning */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    borderRadius: '8px',
+                    padding: window.innerWidth <= 768 ? '6px 8px' : '8px 16px',
+                    margin: '16px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}>
+                    <span style={{ fontSize: window.innerWidth <= 768 ? '10px' : '11px' }}>⚠️</span>
+                    <span style={{
+                      fontSize: window.innerWidth <= 768 ? '10px' : '11px',
+                      color: '#dc2626',
+                      fontWeight: '600',
+                      whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap',
+                      textAlign: 'center',
+                      lineHeight: '1.2'
+                    }}>
+                      Poți folosi Second Chance doar o singură dată!
+                    </span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '12px',
+                    justifyContent: 'center',
+                    marginTop: '20px'
+                  }}>
+                    <button
+                      onClick={() => setShowSecondChanceModal(null)}
+                      style={{
+                        padding: '10px 20px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(148, 163, 184, 0.3)',
+                        background: 'var(--modal-input-bg)',
+                        backdropFilter: 'blur(10px)',
+                        color: 'var(--modal-text-muted)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        minWidth: '80px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--modal-card-bg)';
+                        e.currentTarget.style.borderColor = 'var(--modal-border)';
+                        e.currentTarget.style.color = 'var(--modal-text)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'var(--modal-input-bg)';
+                        e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+                        e.currentTarget.style.color = 'var(--modal-text-muted)';
+                      }}
+                    >
+                      Anulează
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (showSecondChanceModal.newPrediction) {
+                          await useSecondChance(
+                            showSecondChanceModal.matchId,
+                            showSecondChanceModal.currentPrediction,
+                            showSecondChanceModal.newPrediction
+                          );
+                        }
+                      }}
+                      disabled={!showSecondChanceModal.newPrediction}
+                      style={{
+                        padding: '10px 20px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: showSecondChanceModal.newPrediction 
+                          ? 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)'
+                          : 'rgba(156, 163, 175, 0.5)',
+                        color: 'white',
+                        cursor: showSecondChanceModal.newPrediction ? 'pointer' : 'not-allowed',
+                        transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        boxShadow: showSecondChanceModal.newPrediction 
+                          ? '0 4px 16px rgba(139, 92, 246, 0.4)'
+                          : 'none',
+                        minWidth: '120px',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (showSecondChanceModal.newPrediction) {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.6)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (showSecondChanceModal.newPrediction) {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 4px 16px rgba(139, 92, 246, 0.4)';
+                        }
+                      }}
+                    >
+                      🎯 Confirmă
+                    </button>
+                  </div>
+                </>
+              ) : null;
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Modern Boost Confirmation Modal */}
       {showBoostConfirmModal && (
         <div style={{
           position: 'fixed',
@@ -1494,96 +2630,205 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          background: 'rgba(15, 23, 42, 0.8)',
+          backdropFilter: 'blur(8px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000,
-          padding: '20px'
+          padding: '20px',
+          animation: 'modalFadeIn 0.3s ease-out'
         }}>
           <div style={{
-            background: 'var(--superbet-card-bg)',
+            background: 'var(--modal-bg)',
+            backdropFilter: 'blur(20px)',
             borderRadius: '16px',
-            padding: '24px',
-            maxWidth: '400px',
+            padding: '20px',
+            maxWidth: '320px',
             width: '100%',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+            boxShadow: `
+              0 20px 40px rgba(251, 191, 36, 0.15),
+              0 8px 16px rgba(0, 0, 0, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1)
+            `,
             textAlign: 'center',
-            border: '1px solid var(--superbet-border)'
+            border: '1px solid rgba(251, 191, 36, 0.2)',
+            position: 'relative',
+            overflow: 'hidden',
+            animation: 'modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
           }}>
+            {/* Decorative background gradient */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '80px',
+              background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%)',
+              borderRadius: '16px 16px 0 0',
+              zIndex: -1
+            }} />
+            
             {(() => {
               const selectedMatch = matches.find(m => m.id === showBoostConfirmModal);
               return selectedMatch ? (
                 <>
+                  {/* Header Section */}
                   <div style={{ marginBottom: '20px' }}>
                     <div style={{
-                      fontSize: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
                       marginBottom: '12px'
-                    }}>🚀</div>
+                    }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 16px rgba(251, 191, 36, 0.4)',
+                        animation: 'pulseGlow 2s ease-in-out infinite alternate'
+                      }}>
+                        <span style={{ 
+                          fontSize: '16px',
+                          color: 'white'
+                        }}>
+                          🚀
+                        </span>
+                      </div>
+                    </div>
                     <h3 style={{
                       fontSize: '20px',
-                      fontWeight: 'bold',
-                      color: 'var(--superbet-text)',
-                      marginBottom: '8px',
-                      margin: '0 0 8px 0'
+                      fontWeight: '700',
+                      color: 'var(--modal-text)',
+                      margin: '0 0 6px 0',
+                      letterSpacing: '-0.025em'
                     }}>
-                      Confirmă Boost x2
+                      Boost x2
                     </h3>
-                    <p style={{
-                      fontSize: '16px',
-                      color: 'var(--superbet-gray)',
-                      lineHeight: 1.5,
-                      margin: '0'
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: 'white',
+                      padding: '4px 12px',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                      animation: 'bounce 2s ease-in-out infinite'
                     }}>
-                      Vrei să setezi <strong>boost x2</strong> pentru meciul:
-                    </p>
-                    <p style={{
-                      fontSize: '18px',
-                      fontWeight: 'bold',
-                      color: 'var(--boost-highlight-color, #fbbf24)',
-                      margin: '12px 0',
-                      padding: '8px 16px',
-                      background: 'var(--boost-highlight-bg, #fef3c7)',
-                      borderRadius: '8px',
-                      border: '1px solid var(--boost-highlight-color, #fbbf24)'
-                    }}>
-                      {selectedMatch.home_team} - {selectedMatch.away_team}
-                    </p>
-                    <p style={{
-                      fontSize: '14px',
-                      color: 'var(--warning-color, #ef4444)',
-                      margin: '8px 0 0 0',
-                      fontWeight: 600
-                    }}>
-                      ⚠️ Nu poți schimba boost-ul după confirmare!
-                    </p>
+                      <span>⚡</span>
+                      <span>Dublează punctajul!</span>
+                    </div>
                   </div>
 
+                  {/* Match Info */}
+                  <div style={{
+                    background: 'var(--modal-card-bg)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    margin: '16px 0',
+                    border: '1px solid var(--modal-border)'
+                  }}>
+                    <div style={{
+                      fontSize: '11px',
+                      color: 'var(--modal-text-muted)',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      marginBottom: '6px'
+                    }}>
+                      Meciul selectat
+                    </div>
+                    <div style={{
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      color: 'var(--modal-text)',
+                      marginBottom: '6px',
+                      lineHeight: '1.3'
+                    }}>
+                      {selectedMatch.home_team}
+                      <span style={{ 
+                        color: '#fbbf24', 
+                        margin: '0 6px',
+                        fontSize: '12px'
+                      }}>
+                        🚀
+                      </span>
+                      {selectedMatch.away_team}
+                    </div>
+                    <div style={{
+                      fontSize: '11px',
+                      color: 'var(--modal-text-muted)',
+                      fontWeight: '500'
+                    }}>
+                      {selectedMatch.league}
+                    </div>
+                  </div>
+
+                  {/* Warning */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    borderRadius: '8px',
+                    padding: window.innerWidth <= 768 ? '6px 8px' : '6px 10px',
+                    margin: '16px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}>
+                    <span style={{ fontSize: window.innerWidth <= 768 ? '10px' : '11px' }}>⚠️</span>
+                    <span style={{
+                      fontSize: window.innerWidth <= 768 ? '10px' : '11px',
+                      color: '#dc2626',
+                      fontWeight: '600',
+                      whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap',
+                      textAlign: 'center',
+                      lineHeight: '1.2'
+                    }}>
+                      Nu poți schimba boost-ul după confirmare!
+                    </span>
+                  </div>
+
+                  {/* Action Buttons */}
                   <div style={{
                     display: 'flex',
                     gap: '12px',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    marginTop: '20px'
                   }}>
                     <button
                       onClick={() => setShowBoostConfirmModal(null)}
                       style={{
-                        padding: '12px 24px',
-                        fontSize: '14px',
-                        fontWeight: 600,
+                        padding: '10px 20px',
+                        fontSize: '13px',
+                        fontWeight: '600',
                         borderRadius: '8px',
-                        border: '1px solid var(--superbet-border)',
-                        background: 'var(--superbet-card-bg)',
-                        color: 'var(--superbet-gray)',
+                        border: '1px solid rgba(148, 163, 184, 0.3)',
+                        background: 'var(--modal-input-bg)',
+                        backdropFilter: 'blur(10px)',
+                        color: 'var(--modal-text-muted)',
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.2s ease',
+                        minWidth: '80px'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--superbet-light-gray)';
-                        e.currentTarget.style.borderColor = 'var(--superbet-gray)';
+                        e.currentTarget.style.background = 'var(--modal-card-bg)';
+                        e.currentTarget.style.borderColor = 'var(--modal-border)';
+                        e.currentTarget.style.color = 'var(--modal-text)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--superbet-card-bg)';
-                        e.currentTarget.style.borderColor = 'var(--superbet-border)';
+                        e.currentTarget.style.background = 'var(--modal-input-bg)';
+                        e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+                        e.currentTarget.style.color = 'var(--modal-text-muted)';
                       }}
                     >
                       Anulează
@@ -1594,27 +2839,30 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                         setShowBoostConfirmModal(null);
                       }}
                       style={{
-                        padding: '12px 24px',
-                        fontSize: '14px',
-                        fontWeight: 600,
+                        padding: '10px 20px',
+                        fontSize: '13px',
+                        fontWeight: '700',
                         borderRadius: '8px',
                         border: 'none',
                         background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
                         color: 'white',
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: '0 4px 12px rgba(251, 191, 36, 0.4)'
+                        transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        boxShadow: '0 4px 16px rgba(251, 191, 36, 0.4)',
+                        minWidth: '120px',
+                        position: 'relative',
+                        overflow: 'hidden'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(251, 191, 36, 0.6)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(251, 191, 36, 0.6)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(251, 191, 36, 0.4)';
+                        e.currentTarget.style.boxShadow = '0 4px 16px rgba(251, 191, 36, 0.4)';
                       }}
                     >
-                      🚀 Confirmă Boost x2
+                      🚀 Confirmă
                     </button>
                   </div>
                 </>
@@ -1623,9 +2871,237 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
           </div>
         </div>
       )}
+
+      {/* Play Type Selection Modal */}
+      {showPlayTypeModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.8)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px',
+          animation: 'modalFadeIn 0.3s ease-out'
+        }}>
+          <div style={{
+            background: 'var(--modal-bg)',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '420px',
+            width: '100%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            border: '1px solid var(--modal-border)',
+            backdropFilter: 'blur(20px)',
+            animation: 'modalSlideIn 0.3s ease-out'
+          }}>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{ 
+                fontSize: '24px',
+                marginBottom: '8px'
+              }}>🎮</div>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                color: 'var(--modal-text)',
+                margin: '0 0 8px 0'
+              }}>
+                Alege tipul de joc
+              </h3>
+              <p style={{
+                fontSize: '14px',
+                color: 'var(--modal-text-muted)',
+                margin: 0,
+                lineHeight: 1.4
+              }}>
+                Cum vrei să joci în această rundă?
+              </p>
+            </div>
+
+            {/* Play Type Options */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              marginBottom: '24px'
+            }}>
+              <button
+                onClick={() => handlePlayTypeSelection('fun')}
+                style={{
+                  padding: '16px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  borderRadius: '12px',
+                  border: '2px solid #10b981',
+                  background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+                  color: '#065f46',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(16, 185, 129, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                🎉 Pentru distracție
+              </button>
+              
+              <button
+                onClick={() => handlePlayTypeSelection('miza')}
+                style={{
+                  padding: '16px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  borderRadius: '12px',
+                  border: '2px solid #dc2626',
+                  background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+                  color: '#991b1b',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                💰 Cu mizã
+              </button>
+            </div>
+
+            {/* Skip Button */}
+            <div style={{ textAlign: 'center' }}>
+              <button
+                onClick={() => setShowPlayTypeModal(false)}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--modal-text-muted)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--modal-text)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--modal-text-muted)';
+                }}
+              >
+                Mai târziu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HIDDEN TEMPORARILY - SuperSpin Wheel Modal */}
+      {/*
+      {showSuperSpinWheel && (
+        <SuperSpinWheel
+          userName={currentUser.name}
+          onSpinComplete={handleSuperSpinComplete}
+          onClose={() => setShowSuperSpinWheel(false)}
+        />
+      )}
+      */}
       
       <style jsx>{`
-        /* Dark theme custom properties for boost modal */
+        /* Modern modal animations */
+        @keyframes modalFadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        @keyframes modalSlideIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9) translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        
+        @keyframes pulseGlow {
+          0% {
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+          }
+          50% {
+            box-shadow: 0 4px 16px rgba(251, 191, 36, 0.4);
+          }
+          100% {
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.6), 0 0 12px rgba(139, 92, 246, 0.3);
+          }
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+        
+        @keyframes bounce {
+          0%, 20%, 53%, 80%, 100% {
+            animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+            transform: translate3d(0, 0, 0);
+          }
+          40%, 43% {
+            animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06);
+            transform: translate3d(0, -6px, 0);
+          }
+          70% {
+            animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06);
+            transform: translate3d(0, -3px, 0);
+          }
+          90% {
+            transform: translate3d(0, -1px, 0);
+          }
+        }
+        
+        /* Spin animation for Second Chance icon */
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        /* Dark theme custom properties for modals */
         :global(html.dark) {
           --boost-highlight-color: #fbbf24;
           --boost-highlight-bg: rgba(251, 191, 36, 0.15);
@@ -1635,7 +3111,24 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
           --reaction-border: var(--superbet-border);
           --reaction-dropdown-bg: var(--superbet-card-bg);
           --reaction-dropdown-border: var(--superbet-border);
+          --modal-bg: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%);
+          --modal-text: #f1f5f9;
+          --modal-text-muted: #94a3b8;
+          --modal-card-bg: rgba(30, 41, 59, 0.8);
+          --modal-border: rgba(100, 116, 139, 0.3);
+          --modal-input-bg: rgba(51, 65, 85, 0.6);
         }
+        
+        /* Light theme custom properties for modals */
+        :global(html:not(.dark)) {
+          --modal-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+          --modal-text: #1e293b;
+          --modal-text-muted: #64748b;
+          --modal-card-bg: rgba(15, 23, 42, 0.05);
+          --modal-border: rgba(148, 163, 184, 0.2);
+          --modal-input-bg: rgba(255, 255, 255, 0.8);
+        }
+        
 
         .odds-container {
           display: inline-block;
@@ -1656,20 +3149,6 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
         }
         
         @media (max-width: 768px) {
-          .match-info-header,
-          .match-info-cell {
-            position: sticky;
-            left: 0;
-            background: var(--superbet-card-bg);
-            z-index: 10;
-            min-width: 150px !important;
-          }
-          
-          .match-info-header {
-            background: var(--superbet-light-gray);
-            z-index: 11;
-          }
-          
           .match-league-date {
             font-size: 10px !important;
             white-space: nowrap;
@@ -1681,30 +3160,9 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
             font-size: 15px !important;
             font-weight: normal !important;
           }
-          
-          tr:hover .match-info-cell,
-          tr:active .match-info-cell,
-          tr[style*="background-color"] .match-info-cell {
-            background: inherit !important;
-          }
-          
         }
         
         @media (max-width: 480px) {
-          .match-info-header,
-          .match-info-cell {
-            position: sticky;
-            left: 0;
-            background: var(--superbet-card-bg);
-            z-index: 10;
-            min-width: 140px !important;
-          }
-          
-          .match-info-header {
-            background: var(--superbet-light-gray);
-            z-index: 11;
-          }
-          
           .match-league-date {
             font-size: 9px !important;
             white-space: nowrap;
@@ -1716,31 +3174,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
             font-size: 16px !important;
             font-weight: normal !important;
           }
-          
-          tr:hover .match-info-cell,
-          tr:active .match-info-cell,
-          tr[style*="background-color"] .match-info-cell {
-            background: inherit !important;
-          }
-          
         }
         
         /* Landscape mode on mobile devices */
         @media (max-height: 500px) and (orientation: landscape) {
-          .match-info-header,
-          .match-info-cell {
-            position: sticky;
-            left: 0;
-            background: var(--superbet-card-bg);
-            z-index: 10;
-            min-width: 160px !important;
-          }
-          
-          .match-info-header {
-            background: var(--superbet-light-gray);
-            z-index: 11;
-          }
-          
           .match-league-date {
             font-size: 10px !important;
             white-space: nowrap;
@@ -1752,12 +3189,6 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
             font-size: 10px !important;
             padding: 1px 4px !important;
             margin-right: 3px !important;
-          }
-          
-          tr:hover .match-info-cell,
-          tr:active .match-info-cell,
-          tr[style*="background-color"] .match-info-cell {
-            background: inherit !important;
           }
         }
       `}</style>

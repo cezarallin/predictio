@@ -24,6 +24,14 @@ function initDatabase() {
     // Column already exists, that's fine
   }
 
+  // Add play_type column if it doesn't exist (for existing databases)
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN play_type TEXT DEFAULT 'fun'`); // 'fun' or 'miza'
+    console.log('Added play_type column to users table');
+  } catch {
+    // Column already exists, that's fine
+  }
+
   // Matches are now stored in JSON file, not database
 
   // Predictions table (match_id references JSON file matches)
@@ -63,6 +71,33 @@ function initDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id),
       UNIQUE(user_id)
+    )
+  `);
+
+  // Second chances table - each player can use ONE second chance to modify a prediction
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS second_chances (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      match_id TEXT NOT NULL,
+      old_prediction TEXT NOT NULL,
+      new_prediction TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id),
+      UNIQUE(user_id)
+    )
+  `);
+
+  // Super spins table - each player can spin once after login
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS super_spins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      prize_type TEXT NOT NULL, -- 'extra_boost', 'triple_boost', 'spin_again', 'no_win', 'modify_result', 'extra_point', 'five_lei'
+      prize_value INTEGER DEFAULT 0, -- for extra points or boost counts
+      used BOOLEAN DEFAULT FALSE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
     )
   `);
 
@@ -195,13 +230,85 @@ export const clearAllPlayerBoosts = db.prepare(`
   DELETE FROM player_boosts
 `);
 
+// Second chances operations
+export const useSecondChance = db.prepare(`
+  INSERT INTO second_chances (user_id, match_id, old_prediction, new_prediction)
+  VALUES (?, ?, ?, ?)
+`);
+
+export const getUserSecondChance = db.prepare(`
+  SELECT * FROM second_chances WHERE user_id = ?
+`);
+
+export const hasUserUsedSecondChance = db.prepare(`
+  SELECT COUNT(*) as count FROM second_chances WHERE user_id = ?
+`);
+
+export const getAllSecondChances = db.prepare(`
+  SELECT sc.*, u.name as user_name
+  FROM second_chances sc
+  JOIN users u ON sc.user_id = u.id
+`);
+
+export const clearAllSecondChances = db.prepare(`
+  DELETE FROM second_chances
+`);
+
+// Super spin operations
+export const addSuperSpinResult = db.prepare(`
+  INSERT INTO super_spins (user_id, prize_type, prize_value)
+  VALUES (?, ?, ?)
+`);
+
+export const getUserSuperSpins = db.prepare(`
+  SELECT * FROM super_spins WHERE user_id = ? ORDER BY created_at DESC
+`);
+
+export const hasUserSpinnedToday = db.prepare(`
+  SELECT COUNT(*) as count FROM super_spins 
+  WHERE user_id = ? 
+  AND DATE(created_at) = DATE('now')
+`);
+
+export const getUnusedSuperSpinPrizes = db.prepare(`
+  SELECT * FROM super_spins 
+  WHERE user_id = ? AND used = FALSE AND prize_type != 'no_win'
+  ORDER BY created_at DESC
+`);
+
+export const markSuperSpinPrizeAsUsed = db.prepare(`
+  UPDATE super_spins SET used = TRUE WHERE id = ?
+`);
+
+export const getAllSuperSpins = db.prepare(`
+  SELECT ss.*, u.name as user_name
+  FROM super_spins ss
+  JOIN users u ON ss.user_id = u.id
+  ORDER BY ss.created_at DESC
+`);
+
+export const clearAllSuperSpins = db.prepare(`
+  DELETE FROM super_spins
+`);
+
+// Play type operations
+export const updateUserPlayType = db.prepare(`
+  UPDATE users SET play_type = ? WHERE id = ?
+`);
+
+export const getUserPlayType = db.prepare(`
+  SELECT play_type FROM users WHERE id = ?
+`);
+
 export const resetDatabase = () => {
   // Clear all data
   clearAllUsers.run();
   clearAllPredictions.run();
   clearAllReactions.run();
   clearAllPlayerBoosts.run();
-  console.log('🗑️ All users, predictions, reactions and boosts cleared');
+  clearAllSecondChances.run();
+  clearAllSuperSpins.run();
+  console.log('🗑️ All users, predictions, reactions, boosts, second chances and super spins cleared');
 };
 
 export default db;
