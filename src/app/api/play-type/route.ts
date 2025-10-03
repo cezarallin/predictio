@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'userId este obligatoriu' }, { status: 400 });
     }
 
-    const result = getUserPlayType.get(parseInt(userId));
-    const playType = result?.play_type || 'fun';
+    const result = getUserPlayType.get(parseInt(userId)) as { play_type?: string } | undefined;
+    const playType = result?.play_type || null; // Return null if not set
 
     return NextResponse.json({ playType });
   } catch (error) {

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       
       return NextResponse.json({ 
         secondChance,
-        hasUsedSecondChance: hasUsedChance?.count > 0,
+        hasUsedSecondChance: (hasUsedChance as { count: number } | undefined)?.count ?? 0 > 0,
         isSecondChanceAvailable: !anyMatchFinished
       });
     } else {
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     
     // Check if user has already used their second chance
     const hasUsedChance = hasUserUsedSecondChance.get(userId);
-    if (hasUsedChance?.count > 0) {
+    if ((hasUsedChance as { count: number } | undefined)?.count ?? 0 > 0) {
       return NextResponse.json({ 
         error: 'Ai folosit deja șansa ta de modificare. Poți modifica o singură predicție.',
         locked: true

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, Calendar, Trophy, Trash2, RotateCcw, UserX, EyeOff, Sparkles, RotateCw, AlertTriangle, XCircle, Ban } from 'lucide-react';
+import { CheckCircle, Calendar, Trophy, Trash2, RotateCcw, UserX, EyeOff, Sparkles, RotateCw, Ban } from 'lucide-react';
 import { format } from 'date-fns';
 import LoadingSpinner from './LoadingSpinner';
 // import SuperSpinWheel from './SuperSpinWheel'; // HIDDEN TEMPORARILY
@@ -139,10 +139,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
           try {
             const response = await fetch(`/api/play-type?userId=${user.id}`);
             const data = await response.json();
-            return { userId: user.id, playType: data.playType || 'fun' };
+            return { userId: user.id, playType: data.playType }; // Keep null if not set
           } catch (error) {
             console.error(`Failed to load play type for user ${user.id}:`, error);
-            return { userId: user.id, playType: 'fun' };
+            return { userId: user.id, playType: null}; // No default if error
           }
         });
         
@@ -157,6 +157,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
       
       // HIDDEN - Second chance data setting commented out
       // setHasUsedSecondChance(secondChancesData.hasUsedSecondChance || false);
+      
       // setIsSecondChanceAvailable(secondChancesData.isSecondChanceAvailable !== false);
       
       // Set super spin data - HIDDEN TEMPORARILY
@@ -194,6 +195,11 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
       setIsLoading(false);
     }
   }, [currentUser.id]);
+
+  // Check if any user has a play type set (to show/hide the column)
+  const hasAnyPlayTypeSet = () => {
+    return Object.values(playTypes).some(playType => playType !== null && playType !== undefined);
+  };
 
   useEffect(() => {
     loadData();
@@ -293,7 +299,13 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
 
       if (response.ok) {
         setShowPlayTypeModal(false);
-        // Optionally show a success message
+        
+        // Update the playTypes state immediately for this user
+        setPlayTypes(prev => ({
+          ...prev,
+          [currentUser.id]: playType
+        }));
+        
         console.log(`Tip de joc selectat: ${playType}`);
       } else {
         const errorData = await response.json();
@@ -1125,12 +1137,10 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
 
             {/* HIDDEN TEMPORARILY - SuperSpin banner - show always for non-admin users */}
             {false && !isCurrentUserAdmin && (
-              <div className={`superbet-card superspin-banner-card ${hasSpinnedToday ? 'superspin-disabled' : 'superspin-active'}`} style={{ 
+              <div className={`superbet-card superspin-banner-card`} style={{ 
                 padding: '16px 20px', 
-                background: hasSpinnedToday 
-                  ? 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)' 
-                  : 'linear-gradient(135deg, #ffffff 0%, #fee2e2 30%, #fca5a5 60%, #dc2626 100%)',
-                border: hasSpinnedToday ? '2px solid #9ca3af' : '3px solid #dc2626',
+                background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+                border: '2px solid #9ca3af',
                 borderRadius: '12px'
               }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1138,41 +1148,35 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                   width: '40px',
                   height: '40px',
                   borderRadius: '20px',
-                  background: hasSpinnedToday 
-                    ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)'
-                    : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                  background: 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
-                  boxShadow: hasSpinnedToday 
-                    ? '0 3px 8px rgba(156, 163, 175, 0.4)'
-                    : '0 3px 8px rgba(220, 38, 38, 0.4)'
+                  boxShadow: '0 3px 8px rgba(156, 163, 175, 0.4)'
                 }}>
-                  <span style={{ fontSize: '20px' }}>{hasSpinnedToday ? '🎰' : '🎯'}</span>
+                  <span style={{ fontSize: '20px' }}>🎰</span>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ 
                     fontSize: '16px', 
                     fontWeight: 600, 
-                    color: hasSpinnedToday ? '#4b5563' : '#b91c1c',
+                    color: '#4b5563',
                     marginBottom: '4px'
                   }}>
-                    {hasSpinnedToday ? '🎰 Ai învârtit roata etapa asta!' : '🎯 Predictio Wheel - Roata Norocului!'}
+                    🎰 Ai învârtit roata etapa asta!
                   </div>
                   <div style={{ 
                     fontSize: '14px', 
-                    color: hasSpinnedToday ? '#6b7280' : '#7f1d1d',
+                    color: '#6b7280',
                     marginBottom: '8px' 
                   }}>
-                    {hasSpinnedToday 
-                      ? `${superSpinResult?.prize?.type === 'no_win' ? 'Nu ai câștigat nimic.' : `Ai câștigat: ${superSpinResult?.prize?.message || 'Premiu necunoscut'}!`} Revino la următoarea etapă! 🌟`
-                      : 'Învârte roata magică și câștigă boost-uri, puncte extra, 5 lei sau alte premii!'
-                    }
+                    Revino la următoarea etapă! 🌟
                   </div>
-                  {!hasSpinnedToday && (
+                  {/* HIDDEN - Button removed */}
+                  {false && (
                     <button
-                      onClick={() => setShowSuperSpinWheel(true)}
+                      onClick={() => {/* setShowSuperSpinWheel(true) - HIDDEN */}}
                       style={{
                         background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)',
                       color: 'white',
@@ -1305,7 +1309,9 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                 <th style={{ textAlign: 'center', width: '90px' }}>Cota</th>
                 <th style={{ textAlign: 'center', width: '80px' }}>Corecte</th>
                 <th style={{ textAlign: 'center', width: '80px' }}>Acuratețe</th>
-                <th style={{ textAlign: 'center', width: '80px' }}>Tip Joc</th>
+                {hasAnyPlayTypeSet() && (
+                  <th style={{ textAlign: 'center', width: '80px' }}>Tip Joc</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -1400,27 +1406,49 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                         {player.accuracy.toFixed(0)}%
                       </div>
                     </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <div style={{
-                        padding: '3px 8px',
-                        borderRadius: '10px',
-                        background: playTypes[player.userId] === 'miza' ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' : 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-                        color: playTypes[player.userId] === 'miza' ? '#991b1b' : '#065f46',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '4px',
-                        border: `1px solid ${playTypes[player.userId] === 'miza' ? '#dc2626' : '#10b981'}`,
-                        minWidth: '50px'
-                      }}>
-                        {playTypes[player.userId] === 'miza' ? '💰' : '🎉'}
-                        <span style={{ fontSize: '10px' }}>
-                          {playTypes[player.userId] === 'miza' ? 'Mizã' : 'Fun'}
-                        </span>
-                      </div>
-                    </td>
+                    {hasAnyPlayTypeSet() && (
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{
+                          padding: '3px 8px',
+                          borderRadius: '10px',
+                          background: playTypes[player.userId] === 'miza' 
+                            ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' 
+                            : playTypes[player.userId] === 'fun' 
+                              ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)'
+                              : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', // Default for null
+                          color: playTypes[player.userId] === 'miza' 
+                            ? '#991b1b' 
+                            : playTypes[player.userId] === 'fun' 
+                              ? '#065f46'
+                              : '#6b7280', // Default for null
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          border: `1px solid ${playTypes[player.userId] === 'miza' 
+                            ? '#dc2626' 
+                            : playTypes[player.userId] === 'fun' 
+                              ? '#10b981'
+                              : '#9ca3af'}`, // Default for null
+                          minWidth: '50px'
+                        }}>
+                          {playTypes[player.userId] === 'miza' 
+                            ? '💰' 
+                            : playTypes[player.userId] === 'fun' 
+                              ? '🎉' 
+                              : '❓'} {/* Default for null */}
+                          <span style={{ fontSize: '10px' }}>
+                            {playTypes[player.userId] === 'miza' 
+                              ? 'Mizã' 
+                              : playTypes[player.userId] === 'fun' 
+                                ? 'Fun'
+                                : '-'} {/* Default for null */}
+                          </span>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -1681,10 +1709,11 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  ...(isCurrentUser && false && userPrediction && !match.result && {
-                                    boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.3)',
-                                    borderRadius: '4px'
-                                  })
+                                  // HIDDEN - Second Chance styling disabled
+                                  // ...(isCurrentUser && false && userPrediction && !match.result && {
+                                  //   boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.3)',
+                                  //   borderRadius: '4px'
+                                  // })
                                 }}
                                 onTouchStart={(e) => {
                                   // Better mobile touch feedback
@@ -2230,7 +2259,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
       )}
 
       {/* HIDDEN - Modern Second Chance Confirmation Modal */}
-      {false && showSecondChanceModal && (
+      {false && false && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -2277,7 +2306,8 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
             }} />
             
             {(() => {
-              const selectedMatch = matches.find(m => m.id === showSecondChanceModal.matchId);
+              // HIDDEN - Second Chance modal content removed
+              const selectedMatch = null; // matches.find(m => m.id === showSecondChanceModal.matchId);
               return selectedMatch ? (
                 <>
                   {/* Header Section */}
@@ -2361,7 +2391,8 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                       marginBottom: '6px',
                       lineHeight: '1.3'
                     }}>
-                      {selectedMatch.home_team}
+                      {/* HIDDEN - Static placeholder */}
+                      {'Static Team'}
                       <span style={{ 
                         color: '#8b5cf6', 
                         margin: '0 6px',
@@ -2369,14 +2400,15 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                       }}>
                         ⚡
                       </span>
-                      {selectedMatch.away_team}
+                      {'Static Team 2'}
                     </div>
                     <div style={{
                       fontSize: '11px',
                       color: 'var(--modal-text-muted)',
                       fontWeight: '500'
                     }}>
-                      {selectedMatch.league}
+                      {/* HIDDEN - Static placeholder */}
+                      {'Static League'}
                     </div>
                   </div>
 
@@ -2419,8 +2451,9 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                         boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
                         border: '1px solid rgba(255, 255, 255, 0.3)'
                       }}>
-                        {showSecondChanceModal.currentPrediction}
-                      </div>
+                      {/* HIDDEN - Static placeholder */}
+                      {'1'}
+                    </div>
                     </div>
 
                     {/* Arrow */}
@@ -2456,10 +2489,11 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                           <button
                             key={option}
                             onClick={() => {
-                              setShowSecondChanceModal(prev => prev ? {
-                                ...prev,
-                                newPrediction: option
-                              } : null);
+                              // HIDDEN - Second Chance functionality disabled
+                              // setShowSecondChanceModal(prev => prev ? {
+                              //   ...prev,
+                              //   newPrediction: option
+                              // } : null);
                             }}
                             style={{
                               width: '40px',
@@ -2472,21 +2506,15 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                               transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                               position: 'relative',
                               overflow: 'hidden',
-                              ...(showSecondChanceModal.newPrediction === option ? {
-                                background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
-                                color: 'white',
-                                borderColor: '#7c3aed',
-                                boxShadow: '0 4px 16px rgba(139, 92, 246, 0.4), 0 0 0 2px rgba(139, 92, 246, 0.2)',
-                                transform: 'scale(1.05)'
-                              } : {
-                                background: 'var(--modal-input-bg)',
-                                color: 'var(--modal-text)',
-                                borderColor: 'var(--modal-border)',
-                                boxShadow: '0 2px 6px rgba(148, 163, 184, 0.15)'
-                              })
+                              // HIDDEN - Static values
+                              background: 'var(--modal-input-bg)',
+                              color: 'var(--modal-text)',
+                              borderColor: 'var(--modal-border)',
+                              boxShadow: '0 2px 6px rgba(148, 163, 184, 0.15)'
                             }}
                             onMouseEnter={(e) => {
-                              if (showSecondChanceModal.newPrediction !== option) {
+                              // HIDDEN - Static conditions
+                              if (false) {
                                 e.currentTarget.style.borderColor = '#8b5cf6';
                                 e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)';
                                 e.currentTarget.style.transform = 'scale(1.02)';
@@ -2494,7 +2522,8 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                               }
                             }}
                             onMouseLeave={(e) => {
-                              if (showSecondChanceModal.newPrediction !== option) {
+                              // HIDDEN - Static conditions  
+                              if (false) {
                                 e.currentTarget.style.borderColor = 'var(--modal-border)';
                                 e.currentTarget.style.background = 'var(--modal-input-bg)';
                                 e.currentTarget.style.transform = 'scale(1)';
@@ -2542,7 +2571,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                     marginTop: '20px'
                   }}>
                     <button
-                      onClick={() => setShowSecondChanceModal(null)}
+                      onClick={() => {/* setShowSecondChanceModal(null) - HIDDEN */}}
                       style={{
                         padding: '10px 20px',
                         fontSize: '13px',
@@ -2571,42 +2600,42 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                     </button>
                     <button
                       onClick={async () => {
-                        if (showSecondChanceModal.newPrediction) {
-                          await useSecondChance(
-                            showSecondChanceModal.matchId,
-                            showSecondChanceModal.currentPrediction,
-                            showSecondChanceModal.newPrediction
-                          );
+                        // HIDDEN - Static conditions
+                        if (false) {
+                          // HIDDEN - Second Chance functionality
+                          // await useSecondChance(
+                          //   'static-match-id',
+                          //   '1',
+                          //   '2'
+                          // );
                         }
                       }}
-                      disabled={!showSecondChanceModal.newPrediction}
+                      disabled={true}
                       style={{
                         padding: '10px 20px',
                         fontSize: '13px',
                         fontWeight: '700',
                         borderRadius: '8px',
                         border: 'none',
-                        background: showSecondChanceModal.newPrediction 
-                          ? 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)'
-                          : 'rgba(156, 163, 175, 0.5)',
+                        background: 'rgba(156, 163, 175, 0.5)',
                         color: 'white',
-                        cursor: showSecondChanceModal.newPrediction ? 'pointer' : 'not-allowed',
+                        cursor: 'not-allowed',
                         transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                        boxShadow: showSecondChanceModal.newPrediction 
-                          ? '0 4px 16px rgba(139, 92, 246, 0.4)'
-                          : 'none',
+                        boxShadow: 'none',
                         minWidth: '120px',
                         position: 'relative',
                         overflow: 'hidden'
                       }}
                       onMouseEnter={(e) => {
-                        if (showSecondChanceModal.newPrediction) {
+                        // HIDDEN - Static conditions
+                        if (false) {
                           e.currentTarget.style.transform = 'translateY(-1px)';
                           e.currentTarget.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.6)';
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (showSecondChanceModal.newPrediction) {
+                        // HIDDEN - Static conditions
+                        if (false) {
                           e.currentTarget.style.transform = 'translateY(0)';
                           e.currentTarget.style.boxShadow = '0 4px 16px rgba(139, 92, 246, 0.4)';
                         }

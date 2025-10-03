@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, Zap, Heart, Trophy, Sparkles, BarChart3, Moon, RotateCw, Ban } from 'lucide-react';
+import { X, Trophy, Sparkles, RotateCw, Ban } from 'lucide-react';
 
 interface WelcomeModalProps {
   isOpen: boolean;

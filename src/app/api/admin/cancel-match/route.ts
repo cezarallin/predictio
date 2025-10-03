@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if all predictions are the same
-    const firstPrediction = matchPredictions[0].prediction;
+    const firstPrediction = (matchPredictions[0] as any).prediction;
     const allSamePrediction = matchPredictions.every((p: any) => p.prediction === firstPrediction);
     
     if (!allSamePrediction) {

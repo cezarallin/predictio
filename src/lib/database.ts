@@ -26,10 +26,18 @@ function initDatabase() {
 
   // Add play_type column if it doesn't exist (for existing databases)
   try {
-    db.exec(`ALTER TABLE users ADD COLUMN play_type TEXT DEFAULT 'fun'`); // 'fun' or 'miza'
+    db.exec(`ALTER TABLE users ADD COLUMN play_type TEXT`); // 'fun' or 'miza' - no default
     console.log('Added play_type column to users table');
   } catch {
     // Column already exists, that's fine
+  }
+
+  // Reset existing play_type values to NULL (for users who had 'fun' set previously)
+  try {
+    db.exec(`UPDATE users SET play_type = NULL`); // Reset ALL play_type values to NULL
+    console.log('Reset ALL play_type values to NULL');
+  } catch (error) {
+    console.log('Error resetting play_type:', error);
   }
 
   // Matches are now stored in JSON file, not database
@@ -298,6 +306,11 @@ export const updateUserPlayType = db.prepare(`
 
 export const getUserPlayType = db.prepare(`
   SELECT play_type FROM users WHERE id = ?
+`);
+
+// Reset all play types to NULL (for existing users)
+export const resetAllPlayTypes = db.prepare(`
+  UPDATE users SET play_type = NULL
 `);
 
 export const resetDatabase = () => {
