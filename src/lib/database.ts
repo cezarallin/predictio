@@ -109,6 +109,27 @@ function initDatabase() {
     )
   `);
 
+  // H2H challenges table - head-to-head duels between players
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS h2h_challenges (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      challenger_id INTEGER NOT NULL,
+      challenged_id INTEGER NOT NULL,
+      match_date TEXT NOT NULL, -- specific date for the duel (e.g. "2023-12-09")
+      status TEXT DEFAULT 'pending', -- 'pending', 'accepted', 'declined', 'completed'
+      winner_id INTEGER, -- set when challenge is completed
+      challenger_score INTEGER DEFAULT 0, -- number of correct predictions
+      challenged_score INTEGER DEFAULT 0, -- number of correct predictions
+      challenger_odds_total REAL DEFAULT 0.0, -- total odds of correct predictions
+      challenged_odds_total REAL DEFAULT 0.0, -- total odds of correct predictions
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      completed_at DATETIME,
+      FOREIGN KEY (challenger_id) REFERENCES users (id),
+      FOREIGN KEY (challenged_id) REFERENCES users (id),
+      FOREIGN KEY (winner_id) REFERENCES users (id)
+    )
+  `);
+
   console.log('Database initialized');
 }
 
@@ -313,6 +334,81 @@ export const resetAllPlayTypes = db.prepare(`
   UPDATE users SET play_type = NULL
 `);
 
+// H2H Challenge operations
+export const createH2HChallenge = db.prepare(`
+  INSERT INTO h2h_challenges (challenger_id, challenged_id, match_date)
+  VALUES (?, ?, ?)
+`);
+
+export const getH2HChallengeById = db.prepare(`
+  SELECT h.*, 
+         u1.name as challenger_name, 
+         u2.name as challenged_name,
+         u3.name as winner_name
+  FROM h2h_challenges h
+  JOIN users u1 ON h.challenger_id = u1.id
+  JOIN users u2 ON h.challenged_id = u2.id
+  LEFT JOIN users u3 ON h.winner_id = u3.id
+  WHERE h.id = ?
+`);
+
+export const getUserH2HChallenges = db.prepare(`
+  SELECT h.*, 
+         u1.name as challenger_name, 
+         u2.name as challenged_name,
+         u3.name as winner_name
+  FROM h2h_challenges h
+  JOIN users u1 ON h.challenger_id = u1.id
+  JOIN users u2 ON h.challenged_id = u2.id
+  LEFT JOIN users u3 ON h.winner_id = u3.id
+  WHERE h.challenger_id = ? OR h.challenged_id = ?
+  ORDER BY h.created_at DESC
+`);
+
+export const getAllH2HChallenges = db.prepare(`
+  SELECT h.*, 
+         u1.name as challenger_name, 
+         u2.name as challenged_name,
+         u3.name as winner_name
+  FROM h2h_challenges h
+  JOIN users u1 ON h.challenger_id = u1.id
+  JOIN users u2 ON h.challenged_id = u2.id
+  LEFT JOIN users u3 ON h.winner_id = u3.id
+  ORDER BY h.created_at DESC
+`);
+
+export const updateH2HChallengeStatus = db.prepare(`
+  UPDATE h2h_challenges 
+  SET status = ?
+  WHERE id = ?
+`);
+
+export const completeH2HChallenge = db.prepare(`
+  UPDATE h2h_challenges 
+  SET status = 'completed', 
+      winner_id = ?,
+      challenger_score = ?,
+      challenged_score = ?,
+      challenger_odds_total = ?,
+      challenged_odds_total = ?,
+      completed_at = CURRENT_TIMESTAMP
+  WHERE id = ?
+`);
+
+export const getActiveH2HChallengesByDate = db.prepare(`
+  SELECT h.*, 
+         u1.name as challenger_name, 
+         u2.name as challenged_name
+  FROM h2h_challenges h
+  JOIN users u1 ON h.challenger_id = u1.id
+  JOIN users u2 ON h.challenged_id = u2.id
+  WHERE h.match_date = ? AND h.status = 'accepted'
+`);
+
+export const clearAllH2HChallenges = db.prepare(`
+  DELETE FROM h2h_challenges
+`);
+
 export const resetDatabase = () => {
   // Clear all data
   clearAllUsers.run();
@@ -321,7 +417,8 @@ export const resetDatabase = () => {
   clearAllPlayerBoosts.run();
   clearAllSecondChances.run();
   clearAllSuperSpins.run();
-  console.log('🗑️ All users, predictions, reactions, boosts, second chances and super spins cleared');
+  clearAllH2HChallenges.run();
+  console.log('🗑️ All users, predictions, reactions, boosts, second chances, super spins and H2H challenges cleared');
 };
 
 export default db;

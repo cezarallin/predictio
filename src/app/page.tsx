@@ -5,10 +5,34 @@ import PredictionTable from '@/components/PredictionTable';
 import LoginForm from '@/components/LoginForm';
 import Header from '@/components/Header';
 import WelcomeModal from '@/components/WelcomeModal';
+import H2HManager from '@/components/H2HManager';
 
 export default function Home() {
   const [currentUser, setCurrentUser] = useState<{id: number, name: string} | null>(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showH2HManager, setShowH2HManager] = useState(false);
+  const [pendingChallengesCount, setPendingChallengesCount] = useState(0);
+
+  // Fetch pending challenges count for notifications
+  const fetchPendingChallengesCount = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const response = await fetch(`/api/h2h?userId=${currentUser.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const challenges = data.challenges || [];
+        // Count challenges that are pending and where current user is challenged (not challenger)
+        const pendingForUser = challenges.filter((challenge: any) => 
+          challenge.status === 'pending' && challenge.challenged_id === currentUser.id
+        );
+        setPendingChallengesCount(pendingForUser.length);
+      }
+    } catch (error) {
+      console.error('Error fetching pending challenges count:', error);
+      setPendingChallengesCount(0);
+    }
+  };
 
   useEffect(() => {
     // Check for stored user in localStorage
@@ -21,6 +45,22 @@ export default function Home() {
       }
     }
   }, []);
+
+  // Fetch pending challenges count when user changes
+  useEffect(() => {
+    if (currentUser) {
+      fetchPendingChallengesCount();
+      
+      // Set up interval to check for new challenges every 30 seconds
+      const interval = setInterval(fetchPendingChallengesCount, 30000);
+      
+      return () => {
+        clearInterval(interval);
+      };
+    } else {
+      setPendingChallengesCount(0);
+    }
+  }, [currentUser]);
 
   const handleLogin = (user: {id: number, name: string}) => {
     setCurrentUser(user);
@@ -38,9 +78,26 @@ export default function Home() {
     setShowWelcomeModal(false);
   };
 
+  const handleOpenH2H = () => {
+    setShowH2HManager(true);
+    // Refresh count when opening H2H (in case user responds to challenges)
+    fetchPendingChallengesCount();
+  };
+
+  const handleCloseH2H = () => {
+    setShowH2HManager(false);
+    // Refresh count when closing H2H (user may have responded to challenges)
+    fetchPendingChallengesCount();
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--superbet-bg)' }}>
-      <Header currentUser={currentUser} onLogout={handleLogout} />
+      <Header 
+        currentUser={currentUser} 
+        onLogout={handleLogout} 
+        onOpenH2H={handleOpenH2H} 
+        pendingChallengesCount={pendingChallengesCount}
+      />
       
       <main style={{ padding: '20px', background: 'var(--superbet-light-gray)', minHeight: 'calc(100vh - 140px)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -89,6 +146,15 @@ export default function Home() {
         isOpen={showWelcomeModal} 
         onClose={handleCloseWelcomeModal} 
       />
+      
+      {/* H2H Manager Modal - shown when user clicks H2H button */}
+      {currentUser && (
+        <H2HManager 
+          currentUser={currentUser}
+          isOpen={showH2HManager} 
+          onClose={handleCloseH2H} 
+        />
+      )}
     </div>
   );
 }

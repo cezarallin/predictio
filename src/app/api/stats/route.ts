@@ -9,7 +9,7 @@ const HISTORICAL_DATA = {
     players: {
       "Tony": { rank: 1, points: 24.38, odds: 42.49, correct: 11, accuracy: 61, total: 18 },
       "mihai94": { rank: 2, points: 24.04, odds: 49.76, correct: 10, accuracy: 56, total: 18 },
-      "Andrei Tone": { rank: 3, points: 21.33, odds: 52.89, correct: 8, accuracy: 44, total: 18 },
+      "Tone Andrei": { rank: 3, points: 21.33, odds: 52.89, correct: 8, accuracy: 44, total: 18 },
       "Cezar": { rank: 4, points: 17.71, odds: 43.70, correct: 8, accuracy: 44, total: 18 },
       "Dew": { rank: 5, points: 15.86, odds: 48.86, correct: 7, accuracy: 39, total: 18 },
       "Flo": { rank: 6, points: 9.09, odds: 55.28, correct: 4, accuracy: 22, total: 18 }
@@ -19,7 +19,7 @@ const HISTORICAL_DATA = {
     name: "Săptămâna 2 (Sep 23-29)",
     totalMatches: 56,
     players: {
-      "Andrei Tone": { rank: 1, points: 60.72, odds: 202.22, correct: 19, accuracy: 34, total: 56 },
+      "Tone Andrei": { rank: 1, points: 60.72, odds: 202.22, correct: 19, accuracy: 34, total: 56 },
       "mihai94": { rank: 2, points: 51.95, odds: 140.72, correct: 23, accuracy: 41, total: 56 },
       "Tony": { rank: 3, points: 51.17, odds: 155.06, correct: 20, accuracy: 39, total: 56 },
       "Dew": { rank: 4, points: 47.49, odds: 131.48, correct: 22, accuracy: 39, total: 56 },
@@ -32,16 +32,27 @@ const HISTORICAL_DATA = {
     players: {
       "Dew": { rank: 1, points: 46.87, odds: 81.17, correct: 21, accuracy: 58, total: 36 },
       "Tony": { rank: 2, points: 42.57, odds: 115.21, correct: 17, accuracy: 47, total: 36 },
-      "Andrei Tone": { rank: 3, points: 37.53, odds: 129.58, correct: 14, accuracy: 39, total: 36 },
+      "Tone Andrei": { rank: 3, points: 37.53, odds: 129.58, correct: 14, accuracy: 39, total: 36 },
       "mihai94": { rank: 4, points: 36.90, odds: 88.14, correct: 18, accuracy: 50, total: 36 },
       "Cezar": { rank: 5, points: 31.20, odds: 79.98, correct: 18, accuracy: 50, total: 36 },
       "Flo": { rank: 6, points: 30.93, odds: 99.98, correct: 16, accuracy: 44, total: 36 }
+    }
+  },
+  week4: {
+    name: "Săptămâna 4 (Oct 3-6)",
+    totalMatches: 56, // Numărul total de meciuri din săptămâna 4
+    players: {
+      "Cezar": { rank: 1, points: 54.63, odds: 153.26, correct: 24, accuracy: 43, total: 56 },
+      "Tone Andrei": { rank: 2, points: 52.07, odds: 156.59, correct: 24, accuracy: 43, total: 56 },
+      "Tony": { rank: 3, points: 47.30, odds: 214.05, correct: 14, accuracy: 25, total: 56 },
+      "Dew": { rank: 4, points: 43.48, odds: 128.91, correct: 24, accuracy: 43, total: 56 },
+      "mihai94": { rank: 5, points: 43.19, odds: 136.74, correct: 23, accuracy: 41, total: 56 }
     }
   }
 };
 
 function calculatePlayerStats() {
-  const players = ["Tony", "mihai94", "Andrei Tone", "Cezar", "Dew", "Flo"];
+  const players = ["Tony", "mihai94", "Tone Andrei", "Cezar", "Dew", "Flo"];
   const weeks = Object.keys(HISTORICAL_DATA);
   
   return players.map(playerName => {

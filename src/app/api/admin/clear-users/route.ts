@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { clearAllPredictions, clearAllPlayerBoosts, clearAllReactions, clearAllSecondChances, clearAllSuperSpins, getUserByName } from '@/lib/database';
+import { clearAllPredictions, clearAllPlayerBoosts, clearAllReactions, clearAllSecondChances, clearAllSuperSpins, clearAllH2HChallenges, getUserByName } from '@/lib/database';
 import db from '@/lib/database';
 
 export async function POST(request: NextRequest) {
@@ -26,12 +26,13 @@ export async function POST(request: NextRequest) {
 
     console.log(`🗑️ Admin ${adminUserId} clearing all non-admin users and related data...`);
 
-    // Clear all predictions, boosts, reactions, second chances, and super spins first
+    // Clear all related data first (to avoid foreign key constraints)
     clearAllPredictions.run();
     clearAllPlayerBoosts.run();
     clearAllReactions.run();
     clearAllSecondChances.run();
     clearAllSuperSpins.run();
+    clearAllH2HChallenges.run(); // Clear H2H challenges before deleting users
     
     // Delete only non-admin users
     const deleteNonAdminUsers = db.prepare(`
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     console.log(`✅ Deleted ${result.changes} non-admin users and all related data by admin ${adminUserId}`);
 
     return NextResponse.json({ 
-      message: `Successfully deleted ${result.changes} non-admin users and all related data (predictions, boosts, reactions, second chances, super spins). Admin users preserved.`,
+      message: `Successfully deleted ${result.changes} non-admin users and all related data (predictions, boosts, reactions, second chances, super spins, H2H challenges). Admin users preserved.`,
       clearedBy: adminUserId,
       timestamp: new Date().toISOString()
     });

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, Trophy, Sparkles, RotateCw, Ban } from 'lucide-react';
+import { X, Trophy, Users, Sparkles } from 'lucide-react';
 
 interface WelcomeModalProps {
   isOpen: boolean;
@@ -89,12 +89,12 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
             <h2 style={{
               fontSize: '22px',
               fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               margin: 0
             }}>
-              Noutăți! 🎉
+              H2H Challenges! 🔥⚔️
             </h2>
             <Sparkles style={{ 
               width: '24px', 
@@ -109,7 +109,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
             margin: 0,
             lineHeight: 1.4
           }}>
-            Am adăugat noutăți pentru mai multă distracție! 🚀
+            Provocă-ți prietenii la dueluri head-to-head! 🥊⚡
           </p>
         </div>
 
@@ -120,73 +120,13 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
           gap: '16px',
           marginBottom: '24px'
         }}>
-          {/* HIDDEN - Feature: Second Chance - PROMINENT */}
-          {false && (<div className="feature-card dark-theme-card" style={{
+          {/* Feature: H2H Challenges - MAIN FEATURE */}
+          <div className="feature-card dark-theme-card" style={{
             display: 'flex',
             alignItems: 'flex-start',
             gap: '12px',
             padding: '18px',
-            background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)',
-            borderRadius: '12px',
-            border: '3px solid #8b5cf6',
-            boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '22px',
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.5)',
-              border: '2px solid rgba(255, 255, 255, 0.3)'
-            }}>
-              <RotateCw style={{ 
-                width: '22px', 
-                height: '22px', 
-                color: 'white',
-                animation: 'pulse 2s infinite'
-              }} />
-            </div>
-            <div>
-              <h3 className="dark-theme-title" style={{
-                fontSize: '17px',
-                fontWeight: 'bold',
-                color: '#581c87',
-                margin: '0 0 8px 0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}>
-                🎯 Second Chance
-                <span style={{
-                  fontSize: '20px',
-                  animation: 'bounce 1s infinite'
-                }}>⚡</span>
-              </h3>
-              <p className="dark-theme-text" style={{
-                fontSize: '13px',
-                color: '#6b21a8',
-                lineHeight: 1.5,
-                margin: 0,
-                fontWeight: 500
-              }}>
-                <strong className="dark-theme-text">Șansa ta de aur!</strong> Poți schimba predicția pentru <strong className="dark-theme-text">UN meci</strong> chiar și după ce ai văzut predicțiile celorlalți jucători! Dă click pe predicția ta din tabel și alege o nouă opțiune. <strong className="dark-theme-text">Folosește-o înțelept - ai doar o șansă!</strong> 🔥
-              </p>
-            </div>
-          </div>)}
-          
-          {/* HIDDEN TEMPORARILY - Feature: SuperSpin - NEW PROMINENT */}
-          {false && (<div className="feature-card dark-theme-card superspin-card" style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px',
-            padding: '18px',
-            background: 'linear-gradient(135deg, #ffffff 0%, #fee2e2 20%, #fca5a5 40%, #ef4444 60%, #dc2626 80%, #b91c1c 100%)',
+            background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 20%, #fca5a5 40%, #f87171 60%, #ef4444 80%, #dc2626 100%)',
             borderRadius: '12px',
             border: '3px solid #dc2626',
             boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
@@ -205,27 +145,28 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
               boxShadow: '0 4px 12px rgba(220, 38, 38, 0.5)',
               border: '2px solid rgba(255, 255, 255, 0.3)'
             }}>
-              <span style={{
-                fontSize: '22px',
+              <Users style={{ 
+                width: '22px', 
+                height: '22px', 
                 color: 'white',
-                fontWeight: 'bold'
-              }}>🎰</span>
+                animation: 'pulse 2s infinite'
+              }} />
             </div>
             <div>
               <h3 className="dark-theme-title" style={{
                 fontSize: '17px',
                 fontWeight: 'bold',
-                color: '#b91c1c',
+                color: '#7f1d1d',
                 margin: '0 0 8px 0',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px'
               }}>
-                🎯 SuperSpin
+                ⚔️ H2H Challenges
                 <span style={{
                   fontSize: '20px',
                   animation: 'bounce 1s infinite'
-                }}>🎰</span>
+                }}>🔥</span>
               </h3>
               <p className="dark-theme-text" style={{
                 fontSize: '13px',
@@ -234,142 +175,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
                 margin: 0,
                 fontWeight: 500
               }}>
-                <strong className="dark-theme-text">Roata norocului!</strong> O dată pe zi poți învârti roata magică și poți câștiga: <strong className="dark-theme-text">boost-uri extra</strong>, <strong className="dark-theme-text">triple boost</strong>, <strong className="dark-theme-text">puncte bonus</strong> sau chiar <strong className="dark-theme-text">dreptul să modifici un rezultat</strong>! Poate ai noroc să mai poți învârti o dată! 🌟🔥
-              </p>
-            </div>
-          </div>)}
-
-          {/* Feature: Random Predictions */}
-          <div className="feature-card" style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px',
-            padding: '16px',
-            background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-            borderRadius: '12px',
-            border: '2px solid #10b981'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '20px',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 3px 8px rgba(16, 185, 129, 0.4)'
-            }}>
-              <Sparkles style={{ width: '20px', height: '20px', color: 'white' }} />
-            </div>
-            <div>
-              <h3 style={{
-                fontSize: '16px',
-                fontWeight: 'bold',
-                color: '#065f46',
-                margin: '0 0 6px 0'
-              }}>
-                🎲 Predicții Random
-              </h3>
-              <p style={{
-                fontSize: '13px',
-                color: '#065f46',
-                lineHeight: 1.4,
-                margin: 0
-              }}>
-                <strong>Te simți norocos?</strong> Poți alege predicții random pentru toate meciurile și, 
-                dacă vrei, le poți ajusta puțin înainte să trimiți răspunsul! 
-                Perfect pentru când nu știi ce să alegi! 🍀
-              </p>
-            </div>
-          </div>
-
-          {/* Feature: Admin Cancel Match */}
-          <div className="feature-card" style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px',
-            padding: '16px',
-            background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
-            borderRadius: '12px',
-            border: '2px solid #ef4444'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '20px',
-              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 3px 8px rgba(239, 68, 68, 0.4)'
-            }}>
-              <Ban style={{ width: '20px', height: '20px', color: 'white' }} />
-            </div>
-            <div>
-              <h3 style={{
-                fontSize: '16px',
-                fontWeight: 'bold',
-                color: '#991b1b',
-                margin: '0 0 6px 0'
-              }}>
-                🛡️ Anulare Meci
-              </h3>
-              <p style={{
-                fontSize: '13px',
-                color: '#991b1b',
-                lineHeight: 1.4,
-                margin: 0
-              }}>
-                <strong>Un meci poate fi anulat</strong> dacă toți jucătorii au aceeași predicție și 
-                nimeni nu are boost pe acel meci - nimeni nu va primi puncte pentru acel meciul. 
-                Meciul va fi marcat cu fundal roșu. Funcția este disponibilă doar când există unanimitate! 🚫
-              </p>
-            </div>
-          </div>
-
-          {/* Feature: Play Type Selection */}
-          <div className="feature-card" style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px',
-            padding: '16px',
-            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-            borderRadius: '12px',
-            border: '2px solid #0ea5e9'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '20px',
-              background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 3px 8px rgba(14, 165, 233, 0.4)'
-            }}>
-              <span style={{ fontSize: '20px' }}>🎮</span>
-            </div>
-            <div>
-              <h3 style={{
-                fontSize: '16px',
-                fontWeight: 'bold',
-                color: '#0c4a6e',
-                margin: '0 0 6px 0'
-              }}>
-                🎮 Tip de Joc
-              </h3>
-              <p style={{
-                fontSize: '13px',
-                color: '#0c4a6e',
-                lineHeight: 1.4,
-                margin: 0
-              }}>
-                <strong>După ce trimiți predicțiile</strong>, poți alege dacă joci <strong>pentru distracție 🎉</strong> sau 
-                <strong> cu mizã 💰</strong>! Alegerea ta va fi afișată în clasament, așa că toată lumea va știi 
-                cât de serios iei competiția! Poți schimba oricând tipul de joc. 🏆
+                <strong className="dark-theme-text">Provocă un prieten la duel!</strong> Alegeți o dată specifică (de ex. meciurile de sâmbătă) și vedeți cine are mai multe predicții corecte! Cel cu <strong className="dark-theme-text">cel mai mare scor câștigă</strong>, iar la egalitate, cel cu <strong className="dark-theme-text">cotele mai mari</strong> ia victoria! Accesează din butonul H2H din header! ⚔️🏆
               </p>
             </div>
           </div>
@@ -402,8 +208,8 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
               e.currentTarget.style.boxShadow = '0 3px 8px rgba(16, 185, 129, 0.4)';
             }}
           >
-            <Trophy style={{ width: '14px', height: '14px', display: 'inline', marginRight: '6px' }} />
-            Perfect, să încep să joc! 🎯
+            <Users style={{ width: '14px', height: '14px', display: 'inline', marginRight: '6px' }} />
+            Perfect, să încep să provoc! 🥊⚔️
           </button>
           <p style={{
             fontSize: '11px',
@@ -411,7 +217,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
             marginTop: '12px',
             margin: '12px 0 0 0'
           }}>
-            Mult noroc cu predicțiile! May the odds be ever in your favor! 🍀
+            Mult noroc cu provocările! May the best predictor win! 🔥🏆
           </p>
         </div>
       </div>
