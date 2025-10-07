@@ -204,6 +204,28 @@ function calculateOverallStats(playerStats: any[]) {
     return sum + weekData.totalMatches;
   }, 0);
   
+  // Calculez câștigătorii săptămânali (rank 1 în fiecare săptămână)
+  const weeklyWinners: Record<string, number> = {};
+  weeks.forEach(weekKey => {
+    const weekData = HISTORICAL_DATA[weekKey as keyof typeof HISTORICAL_DATA];
+    const winner = Object.entries(weekData.players).find(([_, data]) => data.rank === 1);
+    if (winner) {
+      const winnerName = winner[0];
+      weeklyWinners[winnerName] = (weeklyWinners[winnerName] || 0) + 1;
+    }
+  });
+  
+  // Găsesc câștigătorul ultimei săptămâni
+  const lastWeekKey = weeks[weeks.length - 1];
+  const lastWeekData = HISTORICAL_DATA[lastWeekKey as keyof typeof HISTORICAL_DATA];
+  const lastWeekWinner = Object.entries(lastWeekData.players).find(([_, data]) => data.rank === 1);
+  const lastWeekWinnerName = lastWeekWinner ? lastWeekWinner[0] : '';
+  
+  // Note: H2H statistics will be calculated starting next week
+  // For now, these are placeholder values
+  const mostH2HWins = undefined; // Will be populated when H2H data is available
+  const mostH2HPlayed = undefined; // Will be populated when H2H data is available
+  
   return {
     totalWeeks: weeks.length,
     totalMatches,
@@ -214,7 +236,11 @@ function calculateOverallStats(playerStats: any[]) {
     bestWeeklyPlayer,
     bestWeeklyWeek,
     mostCorrectPlayer,
-    mostAccuratePlayer
+    mostAccuratePlayer,
+    weeklyWinners,
+    lastWeekWinnerName,
+    mostH2HWins,
+    mostH2HPlayed
   };
 }
 

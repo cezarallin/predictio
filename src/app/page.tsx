@@ -62,6 +62,18 @@ export default function Home() {
     }
   }, [currentUser]);
 
+  // Check URL for openH2H parameter
+  useEffect(() => {
+    if (currentUser) {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('openH2H') === 'true') {
+        setShowH2HManager(true);
+        // Clean up URL
+        window.history.replaceState({}, '', '/');
+      }
+    }
+  }, [currentUser]);
+
   const handleLogin = (user: {id: number, name: string}) => {
     setCurrentUser(user);
     localStorage.setItem('predictio_user', JSON.stringify(user));

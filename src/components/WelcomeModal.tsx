@@ -121,15 +121,15 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
           marginBottom: '24px'
         }}>
           {/* Feature: H2H Challenges - MAIN FEATURE */}
-          <div className="feature-card dark-theme-card" style={{
+          <div className="feature-card" style={{
             display: 'flex',
             alignItems: 'flex-start',
             gap: '12px',
             padding: '18px',
-            background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 20%, #fca5a5 40%, #f87171 60%, #ef4444 80%, #dc2626 100%)',
+            background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
             borderRadius: '12px',
-            border: '3px solid #dc2626',
-            boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
+            border: '2px solid var(--superbet-red)',
+            boxShadow: '0 4px 12px rgba(220, 38, 38, 0.2)',
             position: 'relative',
             overflow: 'hidden'
           }}>
@@ -142,8 +142,8 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              boxShadow: '0 4px 12px rgba(220, 38, 38, 0.5)',
-              border: '2px solid rgba(255, 255, 255, 0.3)'
+              boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
+              border: '2px solid rgba(255, 255, 255, 0.9)'
             }}>
               <Users style={{ 
                 width: '22px', 
@@ -153,10 +153,10 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
               }} />
             </div>
             <div>
-              <h3 className="dark-theme-title" style={{
+              <h3 style={{
                 fontSize: '17px',
                 fontWeight: 'bold',
-                color: '#7f1d1d',
+                color: 'var(--superbet-text)',
                 margin: '0 0 8px 0',
                 display: 'flex',
                 alignItems: 'center',
@@ -168,15 +168,87 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
                   animation: 'bounce 1s infinite'
                 }}>🔥</span>
               </h3>
-              <p className="dark-theme-text" style={{
+              <p style={{
                 fontSize: '13px',
-                color: '#7f1d1d',
+                color: 'var(--superbet-text)',
                 lineHeight: 1.5,
                 margin: 0,
                 fontWeight: 500
               }}>
-                <strong className="dark-theme-text">Provocă un prieten la duel!</strong> Alegeți o dată specifică (de ex. meciurile de sâmbătă) și vedeți cine are mai multe predicții corecte! Cel cu <strong className="dark-theme-text">cel mai mare scor câștigă</strong>, iar la egalitate, cel cu <strong className="dark-theme-text">cotele mai mari</strong> ia victoria! Accesează din butonul H2H din header! ⚔️🏆
+                <strong>Provocă un prieten la duel!</strong> Alegeți o dată specifică (de ex. meciurile de sâmbătă) și vedeți cine are mai multe predicții corecte! Cel cu <strong>cel mai mare scor câștigă</strong>, iar la egalitate, cel cu <strong>cotele mai mari</strong> ia victoria! Accesează din butonul H2H din header! ⚔️🏆
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Badge System */}
+        <div style={{
+          marginBottom: '20px',
+          padding: '16px',
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%)',
+          borderRadius: '12px',
+          border: '2px solid var(--superbet-border)'
+        }}>
+          <h3 style={{
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: 'var(--superbet-text)',
+            margin: '0 0 12px 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <Trophy style={{ width: '18px', height: '18px', color: 'var(--superbet-red)' }} />
+            Sistem de Badge-uri
+          </h3>
+          <p style={{
+            fontSize: '12px',
+            color: 'var(--superbet-gray)',
+            margin: '0 0 12px 0'
+          }}>
+            Câștigă badge-uri speciale pentru performanțele tale! Vizitează pagina Stats pentru detalii complete.
+          </p>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '8px',
+            fontSize: '11px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '16px' }}>👑</span>
+              <span style={{ color: 'var(--superbet-text)' }}>Cele mai multe puncte</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '16px' }}>🎯</span>
+              <span style={{ color: 'var(--superbet-text)' }}>Cel mai precis</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '16px' }}>⚡</span>
+              <span style={{ color: 'var(--superbet-text)' }}>Cea mai bună performanță</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '16px' }}>🏆</span>
+              <span style={{ color: 'var(--superbet-text)' }}>Câștigător ultimul turneu</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '16px' }}>🏅</span>
+              <span style={{ color: 'var(--superbet-text)' }}>Turnee câștigate</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '16px' }}>🤡</span>
+              <span style={{ color: 'var(--superbet-text)' }}>Niciun turneu câștigat</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '16px' }}>💪</span>
+              <span style={{ color: 'var(--superbet-text)' }}>Prezență perfectă</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '16px' }}>⚔️</span>
+              <span style={{ color: 'var(--superbet-text)' }}>Campion H2H</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '16px' }}>🎮</span>
+              <span style={{ color: 'var(--superbet-text)' }}>Cel mai activ H2H</span>
             </div>
           </div>
         </div>

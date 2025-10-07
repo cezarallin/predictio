@@ -53,6 +53,10 @@ interface OverallStats {
   bestWeeklyWeek: string;
   mostCorrectPlayer: string;
   mostAccuratePlayer: string;
+  weeklyWinners: Record<string, number>;
+  lastWeekWinnerName: string;
+  mostH2HWins?: string;
+  mostH2HPlayed?: string;
 }
 
 interface HeadToHeadStats {
@@ -67,6 +71,7 @@ export default function StatsPage() {
   const [currentUser, setCurrentUser] = useState<{id: number, name: string} | null>(null);
   const [statsData, setStatsData] = useState<StatsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedBadge, setSelectedBadge] = useState<{emoji: string, label: string, color: string} | null>(null);
 
   useEffect(() => {
     // Check for stored user in localStorage
@@ -115,6 +120,10 @@ export default function StatsPage() {
     window.location.href = '/';
   };
 
+  const navigateToH2H = () => {
+    window.location.href = '/?openH2H=true';
+  };
+
   const getAccuracyColor = (accuracy: number) => {
     if (accuracy >= 70) return '#10b981'; // green
     if (accuracy >= 50) return '#f59e0b'; // yellow
@@ -130,6 +139,78 @@ export default function StatsPage() {
     return badges[rank as keyof typeof badges] || { emoji: '🎯', color: '#6b7280', label: `${rank}` };
   };
 
+  const getPlayerBadges = (playerName: string) => {
+    const badges = [];
+    
+    // Badge pentru cele mai multe puncte (rank 1)
+    const topPlayer = statsData?.playerStats.find(p => p.rank === 1);
+    if (topPlayer?.name === playerName) {
+      badges.push({ emoji: '👑', label: 'Cele Mai Multe Puncte', color: '#ffd700' });
+    }
+    
+    // Badge pentru cel mai precis
+    if (statsData?.overallStats.mostAccuratePlayer === playerName) {
+      badges.push({ emoji: '🎯', label: 'Cel Mai Precis', color: '#10b981' });
+    }
+    
+    // Badge pentru cea mai bună performanță săptămânală
+    if (statsData?.overallStats.bestWeeklyPlayer === playerName) {
+      badges.push({ emoji: '⚡', label: 'Cea Mai Bună Performanță', color: '#f59e0b' });
+    }
+    
+    // Badge pentru câștigător ultima săptămână
+    if (statsData?.overallStats.lastWeekWinnerName === playerName) {
+      badges.push({ emoji: '🏆', label: 'Câștigător Ultimul Turneu', color: '#dc2626' });
+    }
+    
+    // Badge pentru numărul de turnee câștigate
+    const tournamentsWon = statsData?.overallStats.weeklyWinners[playerName] || 0;
+    if (tournamentsWon > 0) {
+      badges.push({ 
+        emoji: '🏅', 
+        label: `${tournamentsWon} ${tournamentsWon === 1 ? 'Turneu Câștigat' : 'Turnee Câștigate'}`, 
+        color: '#8b5cf6' 
+      });
+    } else {
+      // Badge de clovn pentru cei care nu au câștigat niciodată
+      badges.push({ 
+        emoji: '🤡', 
+        label: 'Niciun Turneu Câștigat', 
+        color: '#ef4444' 
+      });
+    }
+    
+    // Badge pentru cei care au jucat în toate turneele
+    const player = statsData?.playerStats.find(p => p.name === playerName);
+    if (player && player.weeksPlayed === statsData?.overallStats.totalWeeks) {
+      badges.push({ 
+        emoji: '💪', 
+        label: 'Prezență Perfectă', 
+        color: '#3b82f6' 
+      });
+    }
+    
+    // Badge pentru cel cu cele mai multe victorii H2H
+    if (statsData?.overallStats.mostH2HWins === playerName) {
+      badges.push({ 
+        emoji: '⚔️', 
+        label: 'Campion H2H', 
+        color: '#dc2626' 
+      });
+    }
+    
+    // Badge pentru cel mai activ în H2H
+    if (statsData?.overallStats.mostH2HPlayed === playerName) {
+      badges.push({ 
+        emoji: '🎮', 
+        label: 'Cel Mai Activ H2H', 
+        color: '#8b5cf6' 
+      });
+    }
+    
+    return badges;
+  };
+
   if (!currentUser) {
     return <LoadingSpinner />;
   }
@@ -137,7 +218,7 @@ export default function StatsPage() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--superbet-bg)' }}>
-        <Header currentUser={currentUser} onLogout={handleLogout} />
+        <Header currentUser={currentUser} onLogout={handleLogout} onOpenH2H={navigateToH2H} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
           <LoadingSpinner />
         </div>
@@ -148,7 +229,7 @@ export default function StatsPage() {
   if (!statsData) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--superbet-bg)' }}>
-        <Header currentUser={currentUser} onLogout={handleLogout} />
+        <Header currentUser={currentUser} onLogout={handleLogout} onOpenH2H={navigateToH2H} />
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
           <p>Nu s-au putut încărca statisticile.</p>
           <button onClick={navigateHome} className="superbet-button">
@@ -161,7 +242,7 @@ export default function StatsPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--superbet-light-gray)' }}>
-      <Header currentUser={currentUser} onLogout={handleLogout} />
+      <Header currentUser={currentUser} onLogout={handleLogout} onOpenH2H={navigateToH2H} />
       
       <main style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
         {/* Back button */}
@@ -196,75 +277,6 @@ export default function StatsPage() {
           </p>
         </div>
 
-        {/* Overall Stats Cards */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-          gap: '20px',
-          marginBottom: '40px'
-        }}>
-          <div className="stats-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <Target style={{ width: '24px', height: '24px', color: 'var(--superbet-red)' }} />
-              <h3>Predicții Totale</h3>
-            </div>
-            <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--superbet-text)' }}>
-              {statsData.overallStats.totalPredictions}
-            </div>
-            <div style={{ fontSize: '14px', color: 'var(--superbet-gray)' }}>
-              {statsData.overallStats.totalWeeks} săptămâni • {statsData.overallStats.totalMatches} meciuri
-            </div>
-          </div>
-
-          <div className="stats-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <Trophy style={{ width: '24px', height: '24px', color: 'var(--superbet-red)' }} />
-              <h3>Cele Mai Multe Puncte</h3>
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--superbet-text)' }}>
-              {(() => {
-                const leader = statsData.playerStats.find(p => p.rank === 1);
-                return leader ? leader.name : 'N/A';
-              })()}
-            </div>
-            <div style={{ fontSize: '14px', color: 'var(--superbet-gray)' }}>
-              {(() => {
-                const leader = statsData.playerStats.find(p => p.rank === 1);
-                return leader ? `${leader.totalPoints} puncte` : '';
-              })()}
-            </div>
-          </div>
-
-          <div className="stats-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <Target style={{ width: '24px', height: '24px', color: 'var(--superbet-red)' }} />
-              <h3>Cel Mai Precis</h3>
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--superbet-text)' }}>
-              {statsData.overallStats.mostAccuratePlayer}
-            </div>
-            <div style={{ fontSize: '14px', color: 'var(--superbet-gray)' }}>
-              {(() => {
-                const bestPlayer = statsData.playerStats.find(p => p.name === statsData.overallStats.mostAccuratePlayer);
-                return bestPlayer ? `${bestPlayer.accuracy.toFixed(1)}% acuratețe (${bestPlayer.correctPredictions} corecte)` : '';
-              })()}
-            </div>
-          </div>
-
-          <div className="stats-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <TrendingUp style={{ width: '24px', height: '24px', color: 'var(--superbet-red)' }} />
-              <h3>Cea Mai Bună Performanță</h3>
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--superbet-text)' }}>
-              {statsData.overallStats.bestWeeklyPlayer}
-            </div>
-            <div style={{ fontSize: '14px', color: 'var(--superbet-gray)' }}>
-              {statsData.overallStats.bestWeeklyAccuracy.toFixed(1)}% - {statsData.overallStats.bestWeeklyWeek}
-            </div>
-          </div>
-        </div>
-
         {/* Player Rankings */}
         <div style={{ 
           background: 'var(--superbet-card-bg)', 
@@ -293,6 +305,7 @@ export default function StatsPage() {
                 <tr>
                   <th className="table-header">Rank</th>
                   <th className="table-header" style={{ textAlign: 'left', minWidth: '120px' }}>Jucător</th>
+                  <th className="table-header" style={{ textAlign: 'left', minWidth: '140px' }}>Badge-uri</th>
                   <th className="table-header">Predicții</th>
                   <th className="table-header">Corecte</th>
                   <th className="table-header">Acuratețe</th>
@@ -314,21 +327,46 @@ export default function StatsPage() {
                       }}
                     >
                       <td className="table-cell" style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '20px' }}>{rankBadge.emoji}</span>
-                          <span style={{ fontWeight: 'bold', color: rankBadge.color }}>
-                            {player.rank}
-                          </span>
-                        </div>
+                        <span style={{ 
+                          fontWeight: 'bold', 
+                          color: player.rank <= 3 ? rankBadge.color : 'var(--superbet-text)',
+                          fontSize: '18px'
+                        }}>
+                          {player.rank}
+                        </span>
                       </td>
                       <td className="table-cell">
                         <div style={{ 
                           fontWeight: isCurrentUser ? 'bold' : '600',
-                          whiteSpace: 'nowrap',
-                          minWidth: '120px'
+                          whiteSpace: 'nowrap'
                         }}>
                           {player.name}
                           {isCurrentUser && <span style={{ color: 'var(--superbet-red)', marginLeft: '8px' }}>TU</span>}
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+                          {getPlayerBadges(player.name).map((badge, idx) => (
+                            <div
+                              key={idx}
+                              title={badge.label}
+                              style={{
+                                fontSize: '18px',
+                                cursor: 'pointer',
+                                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
+                                transition: 'transform 0.2s ease',
+                              }}
+                              onClick={() => setSelectedBadge(badge)}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'scale(1.2)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                              }}
+                            >
+                              {badge.emoji}
+                            </div>
+                          ))}
                         </div>
                       </td>
                       <td className="table-cell" style={{ textAlign: 'center' }}>
@@ -352,7 +390,7 @@ export default function StatsPage() {
                         <div style={{ 
                           fontSize: '18px', 
                           fontWeight: 'bold',
-                          color: player.weeksPlayed === 2 ? '#10b981' : '#f59e0b',
+                          color: player.weeksPlayed === statsData.overallStats.totalWeeks ? '#10b981' : '#f59e0b',
                           whiteSpace: 'nowrap'
                         }}>
                           {player.weeksPlayed}
@@ -362,7 +400,7 @@ export default function StatsPage() {
                           color: 'var(--superbet-gray)',
                           whiteSpace: 'nowrap'
                         }}>
-                          din 2 săptămâni
+                          din {statsData.overallStats.totalWeeks} săptămâni
                         </div>
                       </td>
                     </tr>
@@ -370,6 +408,197 @@ export default function StatsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Badge Explanations */}
+        <div style={{ 
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
+          borderRadius: '12px', 
+          padding: '24px',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          marginBottom: '40px',
+          border: '2px solid var(--superbet-border)'
+        }}>
+          <h2 style={{ 
+            fontSize: '24px', 
+            fontWeight: 'bold', 
+            color: 'var(--superbet-text)', 
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <Trophy style={{ width: '24px', height: '24px', color: 'var(--superbet-red)' }} />
+            Legendă Badge-uri
+          </h2>
+          
+          <div className="badge-legend-grid" style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
+            gap: '16px' 
+          }}>
+            <div style={{
+              background: 'var(--superbet-card-bg)',
+              borderRadius: '8px',
+              padding: '16px',
+              border: '1px solid var(--superbet-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>👑</div>
+              <div>
+                <div style={{ fontWeight: 'bold', color: '#ffd700', fontSize: '14px' }}>Cele Mai Multe Puncte</div>
+                <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
+                  Jucătorul cu cele mai multe puncte în total
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'var(--superbet-card-bg)',
+              borderRadius: '8px',
+              padding: '16px',
+              border: '1px solid var(--superbet-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🎯</div>
+              <div>
+                <div style={{ fontWeight: 'bold', color: '#10b981', fontSize: '14px' }}>Cel Mai Precis</div>
+                <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
+                  Cea mai mare acuratețe generală
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'var(--superbet-card-bg)',
+              borderRadius: '8px',
+              padding: '16px',
+              border: '1px solid var(--superbet-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>⚡</div>
+              <div>
+                <div style={{ fontWeight: 'bold', color: '#f59e0b', fontSize: '14px' }}>Cea Mai Bună Performanță</div>
+                <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
+                  Cea mai bună acuratețe într-o săptămână
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'var(--superbet-card-bg)',
+              borderRadius: '8px',
+              padding: '16px',
+              border: '1px solid var(--superbet-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🏆</div>
+              <div>
+                <div style={{ fontWeight: 'bold', color: '#dc2626', fontSize: '14px' }}>Câștigător Ultimul Turneu</div>
+                <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
+                  Câștigătorul săptămânii precedente
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'var(--superbet-card-bg)',
+              borderRadius: '8px',
+              padding: '16px',
+              border: '1px solid var(--superbet-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🏅</div>
+              <div>
+                <div style={{ fontWeight: 'bold', color: '#8b5cf6', fontSize: '14px' }}>Turnee Câștigate</div>
+                <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
+                  Numărul total de săptămâni câștigate
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'var(--superbet-card-bg)',
+              borderRadius: '8px',
+              padding: '16px',
+              border: '1px solid var(--superbet-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🤡</div>
+              <div>
+                <div style={{ fontWeight: 'bold', color: '#ef4444', fontSize: '14px' }}>Niciun Turneu Câștigat</div>
+                <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
+                  Încă nu a câștigat o săptămână
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'var(--superbet-card-bg)',
+              borderRadius: '8px',
+              padding: '16px',
+              border: '1px solid var(--superbet-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>💪</div>
+              <div>
+                <div style={{ fontWeight: 'bold', color: '#3b82f6', fontSize: '14px' }}>Prezență Perfectă</div>
+                <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
+                  A participat în toate turneele
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'var(--superbet-card-bg)',
+              borderRadius: '8px',
+              padding: '16px',
+              border: '1px solid var(--superbet-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>⚔️</div>
+              <div>
+                <div style={{ fontWeight: 'bold', color: '#dc2626', fontSize: '14px' }}>Campion H2H</div>
+                <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
+                  Cele mai multe victorii H2H
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'var(--superbet-card-bg)',
+              borderRadius: '8px',
+              padding: '16px',
+              border: '1px solid var(--superbet-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🎮</div>
+              <div>
+                <div style={{ fontWeight: 'bold', color: '#8b5cf6', fontSize: '14px' }}>Cel Mai Activ H2H</div>
+                <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
+                  Cele mai multe challenge-uri H2H
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -546,7 +775,106 @@ export default function StatsPage() {
         </div>
       </main>
 
+      {/* Badge Info Popup (Mobile) */}
+      {selectedBadge && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}
+          onClick={() => setSelectedBadge(null)}
+        >
+          <div 
+            style={{
+              background: 'var(--superbet-card-bg)',
+              borderRadius: '16px',
+              padding: '24px',
+              maxWidth: '320px',
+              width: '100%',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              border: '2px solid var(--superbet-border)',
+              animation: 'slideInUp 0.3s ease-out',
+              textAlign: 'center'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ 
+              fontSize: '64px', 
+              marginBottom: '16px',
+              filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))'
+            }}>
+              {selectedBadge.emoji}
+            </div>
+            <h3 style={{
+              fontSize: '20px',
+              fontWeight: 'bold',
+              color: selectedBadge.color,
+              marginBottom: '8px'
+            }}>
+              {selectedBadge.label}
+            </h3>
+            <p style={{
+              fontSize: '14px',
+              color: 'var(--superbet-gray)',
+              marginBottom: '20px',
+              lineHeight: 1.5
+            }}>
+              {(() => {
+                switch(selectedBadge.emoji) {
+                  case '👑': return 'Jucătorul cu cele mai multe puncte în total';
+                  case '🎯': return 'Cea mai mare acuratețe generală';
+                  case '⚡': return 'Cea mai bună acuratețe într-o săptămână';
+                  case '🏆': return 'Câștigătorul săptămânii precedente';
+                  case '🏅': return 'Numărul total de săptămâni câștigate';
+                  case '🤡': return 'Încă nu a câștigat o săptămână';
+                  case '💪': return 'A participat în toate turneele';
+                  case '⚔️': return 'Cele mai multe victorii H2H';
+                  case '🎮': return 'Cele mai multe challenge-uri H2H';
+                  default: return selectedBadge.label;
+                }
+              })()}
+            </p>
+            <button
+              onClick={() => setSelectedBadge(null)}
+              style={{
+                background: 'var(--superbet-red)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px 24px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(50px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
         .stats-card {
           background: var(--superbet-card-bg);
           border-radius: 12px;
@@ -603,6 +931,38 @@ export default function StatsPage() {
           .matches-badge {
             font-size: 11px !important;
             padding: 3px 8px !important;
+          }
+        }
+        
+        @media (max-width: 600px) {
+          main {
+            padding: 12px !important;
+          }
+          
+          /* Badge legend: 3 per row on mobile */
+          .badge-legend-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 8px !important;
+          }
+          
+          .badge-legend-grid > div {
+            padding: 12px 8px !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+            gap: 8px !important;
+          }
+          
+          .badge-legend-grid > div > div:first-child {
+            font-size: 24px !important;
+          }
+          
+          .badge-legend-grid > div > div:last-child > div:first-child {
+            font-size: 11px !important;
+          }
+          
+          .badge-legend-grid > div > div:last-child > div:last-child {
+            font-size: 10px !important;
           }
         }
         
