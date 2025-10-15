@@ -197,15 +197,11 @@ export default function StatsPage() {
       badges.push({ emoji: '🏆', label: 'Câștigător Ultimul Turneu', color: '#dc2626', count: undefined });
     }
     
-    // Badge pentru săptămână perfectă (100% acuratețe)
-    const hasPerfectWeek = statsData?.weeklyStats.some(week => {
-      const playerStats = week.players[playerName];
-      return playerStats && playerStats.accuracy === 100;
-    });
-    if (hasPerfectWeek) {
+    // Badge pentru cele mai multe predicții câștigătoare
+    if (statsData?.overallStats.mostCorrectPlayer === playerName) {
       badges.push({ 
         emoji: '🌟', 
-        label: 'Săptămână Perfectă', 
+        label: 'Cele Mai Multe Predicții Câștigătoare', 
         color: '#a855f7',
         count: undefined
       });
@@ -1723,9 +1719,9 @@ export default function StatsPage() {
               }}>
                 <div style={{ fontSize: '36px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🌟</div>
                 <div>
-                  <div style={{ fontWeight: 'bold', color: '#a855f7', fontSize: '14px' }}>Săptămână Perfectă</div>
+                  <div style={{ fontWeight: 'bold', color: '#a855f7', fontSize: '14px' }}>Cele Mai Multe Predicții Câștigătoare</div>
                   <div style={{ fontSize: '12px', color: 'var(--superbet-gray)' }}>
-                    100% acuratețe într-o săptămână
+                    Cele mai multe predicții corecte în total
                   </div>
                 </div>
               </div>
@@ -1919,7 +1915,7 @@ export default function StatsPage() {
                   case '🎯': return 'Cea mai mare acuratețe generală';
                   case '⚡': return 'Cea mai bună acuratețe într-o săptămână';
                   case '🏆': return 'Câștigătorul săptămânii precedente';
-                  case '🌟': return '100% acuratețe într-o săptămână';
+                  case '🌟': return 'Cele mai multe predicții corecte în total';
                   case '🏅': return 'Numărul total de săptămâni câștigate';
                   case '🤡': return 'Încă nu a câștigat o săptămână';
                   case '💪': return 'A participat în toate turneele';

@@ -1748,7 +1748,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                         color: match.cancelled ? '#9ca3af' : 'var(--superbet-gray)', 
                         marginBottom: '6px' 
                       }} className="match-league-date">
-                        {match.league} • {format(new Date(new Date(match.match_date).getTime() - 60 * 60 * 1000), 'dd MMM, HH:mm')}
+                        {match.league} • {format(new Date(new Date(match.match_date).getTime() - 3 * 60 * 60 * 1000), 'dd MMM, HH:mm')}
                       </div>
                       {/* Odds under match details */}
                       <div style={{ 
