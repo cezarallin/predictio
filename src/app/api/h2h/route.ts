@@ -6,6 +6,7 @@ import {
   getAllH2HChallenges,
   updateH2HChallengeStatus,
   completeH2HChallenge,
+  deleteH2HChallenge,
   getActiveH2HChallengesByDate,
   getAllPredictions,
   getUserByName,
@@ -423,6 +424,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         challenge: updatedChallenge,
         message: status === 'accepted' ? 'Provocare acceptată!' : 'Provocare refuzată!',
+        success: true 
+      });
+    }
+    
+    if (action === 'delete_challenge') {
+      if (!challengeId) {
+        return NextResponse.json({ error: 'Missing challenge ID' }, { status: 400 });
+      }
+      
+      deleteH2HChallenge.run(challengeId);
+      
+      return NextResponse.json({ 
+        message: 'Provocare ștearsă cu succes!',
         success: true 
       });
     }

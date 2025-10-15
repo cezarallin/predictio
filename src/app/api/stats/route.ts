@@ -1,5 +1,109 @@
 import { NextResponse } from 'next/server';
 
+// Date H2H din fotografii - actualizează aici când ai noi dueluri finalizate
+// NOTĂ: Pentru a adăuga dueluri noi, adaugă obiecte în acest array
+const H2H_HISTORICAL_DATA = [
+  {
+    challenger: "Cezar",
+    challenged: "Tone Andrei",
+    winner: "Cezar",
+    challengerScore: 5,
+    challengedScore: 4,
+    challengerOdds: 7.80,
+    challengedOdds: 6.99,
+    matchDate: "2025-10-09",
+    completedAt: "2025-10-09"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Cezar",
+    winner: "mihai94",
+    challengerScore: 5,
+    challengedScore: 5,
+    challengerOdds: 11.57,
+    challengedOdds: 7.80,
+    matchDate: "2025-10-09",
+    completedAt: "2025-10-09"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Tone Andrei",
+    winner: "Tone Andrei",
+    challengerScore: 4,
+    challengedScore: 4,
+    challengerOdds: 4.67,
+    challengedOdds: 6.99,
+    matchDate: "2025-10-09",
+    completedAt: "2025-10-09"
+  },
+  {
+    challenger: "Tony",
+    challenged: "mihai94",
+    winner: "mihai94",
+    challengerScore: 3,
+    challengedScore: 5,
+    challengerOdds: 3.20,
+    challengedOdds: 8.80,
+    matchDate: "2025-10-10",
+    completedAt: "2025-10-10"
+  },
+  {
+    challenger: "Cezar",
+    challenged: "Tone Andrei",
+    winner: "Tone Andrei",
+    challengerScore: 4,
+    challengedScore: 5,
+    challengerOdds: 5.67,
+    challengedOdds: 8.40,
+    matchDate: "2025-10-10",
+    completedAt: "2025-10-10"
+  },
+  {
+    challenger: "Cezar",
+    challenged: "mihai94",
+    winner: "mihai94",
+    challengerScore: 4,
+    challengedScore: 5,
+    challengerOdds: 5.67,
+    challengedOdds: 8.80,
+    matchDate: "2025-10-10",
+    completedAt: "2025-10-10"
+  },
+  {
+    challenger: "Cezar",
+    challenged: "mihai94",
+    winner: "Egalitate",
+    challengerScore: 6,
+    challengedScore: 6,
+    challengerOdds: 7.29,
+    challengedOdds: 7.29,
+    matchDate: "2025-10-11",
+    completedAt: "2025-10-11"
+  },
+  {
+    challenger: "Dew",
+    challenged: "Cezar",
+    winner: "Dew",
+    challengerScore: 7,
+    challengedScore: 5,
+    challengerOdds: 15.04,
+    challengedOdds: 6.31,
+    matchDate: "2025-10-12",
+    completedAt: "2025-10-12"
+  },
+  {
+    challenger: "Cezar",
+    challenged: "mihai94",
+    winner: "mihai94",
+    challengerScore: 4,
+    challengedScore: 5,
+    challengerOdds: 7.52,
+    challengedOdds: 10.87,
+    matchDate: "2025-10-13",
+    completedAt: "2025-10-13"
+  }
+];
+
 // Date exacte din fotografiile clasamentelor
 // NOTĂ: Pentru a adăuga o nouă săptămână, doar adaugă un nou obiect în HISTORICAL_DATA
 const HISTORICAL_DATA = {
@@ -40,13 +144,25 @@ const HISTORICAL_DATA = {
   },
   week4: {
     name: "Săptămâna 4 (Oct 3-6)",
-    totalMatches: 56, // Numărul total de meciuri din săptămâna 4
+    totalMatches: 56,
     players: {
       "Cezar": { rank: 1, points: 54.63, odds: 153.26, correct: 24, accuracy: 43, total: 56 },
       "Tone Andrei": { rank: 2, points: 52.07, odds: 156.59, correct: 24, accuracy: 43, total: 56 },
       "Tony": { rank: 3, points: 47.30, odds: 214.05, correct: 14, accuracy: 25, total: 56 },
       "Dew": { rank: 4, points: 43.48, odds: 128.91, correct: 24, accuracy: 43, total: 56 },
       "mihai94": { rank: 5, points: 43.19, odds: 136.74, correct: 23, accuracy: 41, total: 56 }
+    }
+  },
+  week5: {
+    name: "Săptămâna 5 (Oct 7-13)",
+    totalMatches: 48,
+    players: {
+      "Flo": { rank: 1, points: 66.47, odds: 110.18, correct: 34, accuracy: 71, total: 48 },
+      "Tone Andrei": { rank: 2, points: 61.91, odds: 97.53, correct: 33, accuracy: 69, total: 48 },
+      "mihai94": { rank: 3, points: 55.64, odds: 89.94, correct: 33, accuracy: 69, total: 48 },
+      "Dew": { rank: 4, points: 50.09, odds: 81.99, correct: 32, accuracy: 67, total: 48 },
+      "Cezar": { rank: 5, points: 47.71, odds: 87.18, correct: 31, accuracy: 65, total: 48 },
+      "Tony": { rank: 6, points: 40.57, odds: 87.86, correct: 29, accuracy: 60, total: 48 }
     }
   }
 };
@@ -159,6 +275,78 @@ function calculateWeeklyStats() {
   });
 }
 
+function calculateRealH2HStats() {
+  try {
+    // Use historical data instead of database
+    const completedChallenges = H2H_HISTORICAL_DATA;
+    
+    if (completedChallenges.length === 0) {
+      return { mostWins: undefined, mostPlayed: undefined, h2hData: [], playerH2HStats: {} };
+    }
+    
+    // Count wins and total challenges per player
+    const playerH2HStats: Record<string, { wins: number, total: number }> = {};
+    
+    completedChallenges.forEach(challenge => {
+      const challengerName = challenge.challenger;
+      const challengedName = challenge.challenged;
+      
+      // Initialize stats if not exists
+      if (!playerH2HStats[challengerName]) {
+        playerH2HStats[challengerName] = { wins: 0, total: 0 };
+      }
+      if (!playerH2HStats[challengedName]) {
+        playerH2HStats[challengedName] = { wins: 0, total: 0 };
+      }
+      
+      // Count total challenges
+      playerH2HStats[challengerName].total++;
+      playerH2HStats[challengedName].total++;
+      
+      // Count wins (skip egalitate)
+      if (challenge.winner === challengerName) {
+        playerH2HStats[challengerName].wins++;
+      } else if (challenge.winner === challengedName) {
+        playerH2HStats[challengedName].wins++;
+      }
+      // If winner is "Egalitate", no one gets a win
+    });
+    
+    // Find player with most wins
+    let mostWins = undefined;
+    let maxWins = 0;
+    Object.entries(playerH2HStats).forEach(([name, stats]) => {
+      if (stats.wins > maxWins) {
+        maxWins = stats.wins;
+        mostWins = name;
+      }
+    });
+    
+    // Find player with most challenges played
+    let mostPlayed = undefined;
+    let maxPlayed = 0;
+    Object.entries(playerH2HStats).forEach(([name, stats]) => {
+      if (stats.total > maxPlayed) {
+        maxPlayed = stats.total;
+        mostPlayed = name;
+      }
+    });
+    
+    // H2H data is already in the correct format
+    const h2hData = completedChallenges;
+    
+    return { 
+      mostWins, 
+      mostPlayed,
+      h2hData,
+      playerH2HStats
+    };
+  } catch (error) {
+    console.error('Error calculating H2H stats:', error);
+    return { mostWins: undefined, mostPlayed: undefined, h2hData: [], playerH2HStats: {} };
+  }
+}
+
 function calculateOverallStats(playerStats: any[]) {
   const weeks = Object.keys(HISTORICAL_DATA);
   const totalPredictions = playerStats.reduce((sum, p) => sum + p.totalPredictions, 0);
@@ -221,10 +409,10 @@ function calculateOverallStats(playerStats: any[]) {
   const lastWeekWinner = Object.entries(lastWeekData.players).find(([_, data]) => data.rank === 1);
   const lastWeekWinnerName = lastWeekWinner ? lastWeekWinner[0] : '';
   
-  // Note: H2H statistics will be calculated starting next week
-  // For now, these are placeholder values
-  const mostH2HWins = undefined; // Will be populated when H2H data is available
-  const mostH2HPlayed = undefined; // Will be populated when H2H data is available
+  // Calculate H2H statistics from database
+  const h2hStats = calculateRealH2HStats();
+  const mostH2HWins = h2hStats.mostWins;
+  const mostH2HPlayed = h2hStats.mostPlayed;
   
   return {
     totalWeeks: weeks.length,
@@ -289,12 +477,15 @@ export async function GET() {
     const weeklyStats = calculateWeeklyStats();
     const overallStats = calculateOverallStats(playerStats);
     const headToHead = calculateHeadToHead(playerStats);
+    const h2hRealStats = calculateRealH2HStats();
     
     return NextResponse.json({
       weeklyStats,
       playerStats,
       overallStats,
-      headToHead
+      headToHead,
+      h2hChallenges: h2hRealStats.h2hData,
+      h2hPlayerStats: h2hRealStats.playerH2HStats
     });
   } catch (error) {
     console.error('Eroare la calculul statisticilor:', error);

@@ -130,6 +130,26 @@ function initDatabase() {
     )
   `);
 
+  // App settings table - for global configuration
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Initialize default settings
+  try {
+    const checkSetting = db.prepare('SELECT * FROM app_settings WHERE key = ?');
+    if (!checkSetting.get('results_enabled')) {
+      db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)').run('results_enabled', 'true');
+      console.log('Initialized results_enabled setting to true');
+    }
+  } catch (error) {
+    console.log('Error initializing settings:', error);
+  }
+
   console.log('Database initialized');
 }
 
@@ -395,6 +415,10 @@ export const completeH2HChallenge = db.prepare(`
   WHERE id = ?
 `);
 
+export const deleteH2HChallenge = db.prepare(`
+  DELETE FROM h2h_challenges WHERE id = ?
+`);
+
 export const getActiveH2HChallengesByDate = db.prepare(`
   SELECT h.*, 
          u1.name as challenger_name, 
@@ -407,6 +431,19 @@ export const getActiveH2HChallengesByDate = db.prepare(`
 
 export const clearAllH2HChallenges = db.prepare(`
   DELETE FROM h2h_challenges
+`);
+
+// App settings operations
+export const getAppSetting = db.prepare(`
+  SELECT value FROM app_settings WHERE key = ?
+`);
+
+export const setAppSetting = db.prepare(`
+  INSERT INTO app_settings (key, value, updated_at)
+  VALUES (?, ?, CURRENT_TIMESTAMP)
+  ON CONFLICT(key) DO UPDATE SET
+    value = excluded.value,
+    updated_at = CURRENT_TIMESTAMP
 `);
 
 export const resetDatabase = () => {

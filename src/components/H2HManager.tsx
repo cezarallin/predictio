@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Trophy, Clock, CheckCircle, XCircle, Calendar, Target, ChevronDown, ChevronUp, Swords } from 'lucide-react';
+import { Users, Trophy, Clock, CheckCircle, XCircle, Calendar, Target, ChevronDown, ChevronUp, Swords, Trash2 } from 'lucide-react';
 
 interface H2HChallenge {
   id: number;
@@ -78,6 +78,8 @@ export default function H2HManager({ currentUser, isOpen, onClose }: H2HManagerP
   const [detailedResults, setDetailedResults] = useState<Map<number, DetailedResults>>(new Map());
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const [userCompletedPredictions, setUserCompletedPredictions] = useState<Map<string, boolean>>(new Map());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [challengeToDelete, setChallengeToDelete] = useState<number | null>(null);
 
   // Fetch data when modal opens
   useEffect(() => {
@@ -252,6 +254,37 @@ export default function H2HManager({ currentUser, isOpen, onClose }: H2HManagerP
     } catch (error) {
       console.error('Error responding to challenge:', error);
     }
+  };
+
+  const deleteChallenge = async () => {
+    if (!challengeToDelete) return;
+
+    try {
+      const response = await fetch('/api/h2h', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete_challenge',
+          challengeId: challengeToDelete
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setShowDeleteConfirm(false);
+          setChallengeToDelete(null);
+          fetchData(); // Refresh challenges
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting challenge:', error);
+    }
+  };
+
+  const handleDeleteClick = (challengeId: number) => {
+    setChallengeToDelete(challengeId);
+    setShowDeleteConfirm(true);
   };
 
   const toggleExpanded = async (challengeId: number) => {
@@ -838,9 +871,33 @@ export default function H2HManager({ currentUser, isOpen, onClose }: H2HManagerP
             )}
 
             <div>
-              <h3 style={{ marginBottom: '16px', color: 'var(--superbet-text)' }}>
-                Provocările tale
-              </h3>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                marginBottom: '16px',
+                paddingBottom: '8px',
+                borderBottom: '2px solid var(--superbet-border)'
+              }}>
+                <h3 style={{ 
+                  margin: 0, 
+                  fontSize: '18px', 
+                  fontWeight: 'bold', 
+                  color: 'var(--superbet-text)' 
+                }}>
+                  Provocările Tale
+                </h3>
+                <div style={{
+                  marginLeft: '8px',
+                  background: 'var(--superbet-light-gray)',
+                  color: 'var(--superbet-gray)',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: 'bold'
+                }}>
+                  {challenges.length}
+                </div>
+              </div>
               
               {challenges.length === 0 ? (
                 <div style={{
@@ -891,7 +948,7 @@ export default function H2HManager({ currentUser, isOpen, onClose }: H2HManagerP
                           </div>
                         </div>
                         
-                        <div style={{ textAlign: 'right' }}>
+                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
                           <div style={{
                             background: getStatusColor(challenge.status),
                             color: 'white',
@@ -902,6 +959,33 @@ export default function H2HManager({ currentUser, isOpen, onClose }: H2HManagerP
                           }}>
                             {getDisplayStatus(challenge)}
                           </div>
+                          <button
+                            onClick={() => handleDeleteClick(challenge.id)}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid #ef4444',
+                              color: '#ef4444',
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#ef4444';
+                              e.currentTarget.style.color = 'white';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'transparent';
+                              e.currentTarget.style.color = '#ef4444';
+                            }}
+                          >
+                            <Trash2 size={12} />
+                            Șterge
+                          </button>
                         </div>
                       </div>
 
@@ -1032,7 +1116,11 @@ export default function H2HManager({ currentUser, isOpen, onClose }: H2HManagerP
               
               {/* Other Players' Challenges Section */}
               {otherChallenges.length > 0 && (
-                <div style={{ marginTop: '32px' }}>
+                <div style={{ 
+                  marginTop: '48px',
+                  paddingTop: '24px',
+                  borderTop: '2px solid var(--superbet-border)'
+                }}>
                   <div style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
@@ -1330,8 +1418,166 @@ export default function H2HManager({ currentUser, isOpen, onClose }: H2HManagerP
           .h2h-odds {
             font-size: 6px !important;
           }
+          
+          /* Delete Modal - smaller on mobile */
+          .delete-modal-content {
+            max-width: 320px !important;
+            padding: 16px !important;
+          }
+          
+          .delete-modal-body {
+            margin-bottom: 16px !important;
+          }
+          
+          .delete-icon-wrapper {
+            width: 48px !important;
+            height: 48px !important;
+            margin-bottom: 12px !important;
+          }
+          
+          .delete-icon {
+            width: 24px !important;
+            height: 24px !important;
+          }
+          
+          .delete-title {
+            font-size: 16px !important;
+            margin-bottom: 6px !important;
+          }
+          
+          .delete-text {
+            font-size: 12px !important;
+            line-height: 1.4 !important;
+          }
+          
+          .delete-buttons {
+            gap: 8px !important;
+          }
+          
+          .delete-cancel-button,
+          .delete-confirm-button {
+            padding: 10px !important;
+            font-size: 13px !important;
+          }
         }
       `}</style>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="delete-modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+          padding: '20px'
+        }}>
+          <div className="delete-modal-content" style={{
+            background: 'var(--superbet-card-bg)',
+            borderRadius: '16px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '100%',
+            border: '2px solid var(--superbet-border)',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          }}>
+            <div className="delete-modal-body" style={{
+              textAlign: 'center',
+              marginBottom: '24px'
+            }}>
+              <div className="delete-icon-wrapper" style={{
+                width: '64px',
+                height: '64px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px'
+              }}>
+                <Trash2 size={32} color="#ef4444" className="delete-icon" />
+              </div>
+              <h3 className="delete-title" style={{
+                fontSize: '20px',
+                fontWeight: 'bold',
+                color: 'var(--superbet-text)',
+                margin: '0 0 8px 0'
+              }}>
+                Șterge Challenge
+              </h3>
+              <p className="delete-text" style={{
+                fontSize: '14px',
+                color: 'var(--superbet-gray)',
+                margin: 0,
+                lineHeight: 1.5
+              }}>
+                Ești sigur că vrei să ștergi acest challenge? Această acțiune nu poate fi anulată.
+              </p>
+            </div>
+            <div className="delete-buttons" style={{
+              display: 'flex',
+              gap: '12px'
+            }}>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setChallengeToDelete(null);
+                }}
+                className="delete-cancel-button"
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  border: '1px solid var(--superbet-border)',
+                  borderRadius: '8px',
+                  background: 'var(--superbet-card-bg)',
+                  color: 'var(--superbet-text)',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--superbet-light-gray)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'var(--superbet-card-bg)';
+                }}
+              >
+                Anulează
+              </button>
+              <button
+                onClick={deleteChallenge}
+                className="delete-confirm-button"
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  background: '#ef4444',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#dc2626';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#ef4444';
+                }}
+              >
+                Șterge
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

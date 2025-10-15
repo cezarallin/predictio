@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import PredictionTable from '@/components/PredictionTable';
 import LoginForm from '@/components/LoginForm';
 import Header from '@/components/Header';
-import WelcomeModal from '@/components/WelcomeModal';
+// import WelcomeModal from '@/components/WelcomeModal'; // HIDDEN - not shown for now
 import H2HManager from '@/components/H2HManager';
 
 export default function Home() {
   const [currentUser, setCurrentUser] = useState<{id: number, name: string} | null>(null);
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  // const [showWelcomeModal, setShowWelcomeModal] = useState(false); // HIDDEN - not shown for now
   const [showH2HManager, setShowH2HManager] = useState(false);
   const [pendingChallengesCount, setPendingChallengesCount] = useState(0);
 
@@ -77,8 +77,8 @@ export default function Home() {
   const handleLogin = (user: {id: number, name: string}) => {
     setCurrentUser(user);
     localStorage.setItem('predictio_user', JSON.stringify(user));
-    // Show welcome modal only on fresh login (not on page refresh)
-    setShowWelcomeModal(true);
+    // HIDDEN - Welcome modal not shown for now
+    // setShowWelcomeModal(true);
   };
 
   const handleLogout = () => {
@@ -86,9 +86,10 @@ export default function Home() {
     localStorage.removeItem('predictio_user');
   };
 
-  const handleCloseWelcomeModal = () => {
-    setShowWelcomeModal(false);
-  };
+  // HIDDEN - Welcome modal handler not used for now
+  // const handleCloseWelcomeModal = () => {
+  //   setShowWelcomeModal(false);
+  // };
 
   const handleOpenH2H = () => {
     setShowH2HManager(true);
@@ -153,11 +154,13 @@ export default function Home() {
         </div>
       </footer>
       
-      {/* Welcome Modal - shown only after fresh login */}
+      {/* HIDDEN - Welcome Modal not shown for now */}
+      {/*
       <WelcomeModal 
         isOpen={showWelcomeModal} 
         onClose={handleCloseWelcomeModal} 
       />
+      */}
       
       {/* H2H Manager Modal - shown when user clicks H2H button */}
       {currentUser && (
