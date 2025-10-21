@@ -1,16 +1,14 @@
 'use client';
 
-import { Trophy, LogOut, BarChart3, Moon, Sun, Swords } from 'lucide-react';
+import { Trophy, LogOut, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 interface HeaderProps {
   currentUser: {id: number, name: string} | null;
   onLogout: () => void;
-  onOpenH2H?: () => void;
-  pendingChallengesCount?: number;
 }
 
-export default function Header({ currentUser, onLogout, onOpenH2H, pendingChallengesCount = 0 }: HeaderProps) {
+export default function Header({ currentUser, onLogout }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   
   return (
@@ -53,18 +51,10 @@ export default function Header({ currentUser, onLogout, onOpenH2H, pendingChalle
             }}>
               Predictio
             </h1>
-            <p style={{ 
-              fontSize: '14px', 
-              color: 'var(--superbet-gray)', 
-              margin: 0
-            }} className="hidden-mobile">
-              Joc de Predicții Fotbal
-            </p>
           </div>
         </div>
         
         <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
             className="superbet-outline-button header-theme-btn"
@@ -94,61 +84,15 @@ export default function Header({ currentUser, onLogout, onOpenH2H, pendingChalle
                   {currentUser.name}
                 </div>
               </div>
-              <div className="header-buttons" style={{ display: 'flex', gap: '12px' }}>
-                <button
-                  onClick={onOpenH2H}
-                  className="superbet-button header-nav-btn"
-                  title="H2H Challenges"
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px',
-                    position: 'relative'
-                  }}
-                >
-                  <Swords className="header-icon" style={{ width: '16px', height: '16px' }} />
-                  <span className="hidden-mobile-text">H2H</span>
-                  {pendingChallengesCount > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '-6px',
-                      right: '-6px',
-                      background: 'var(--superbet-red)',
-                      color: 'white',
-                      borderRadius: '50%',
-                      width: '18px',
-                      height: '18px',
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '2px solid var(--superbet-card-bg)',
-                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
-                    }}>
-                      {pendingChallengesCount > 9 ? '9+' : pendingChallengesCount}
-                    </div>
-                  )}
-                </button>
-                <button
-                  onClick={() => window.location.href = '/stats'}
-                  className="superbet-button header-nav-btn"
-                  title="Statistici și Istoric"
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <BarChart3 className="header-icon" style={{ width: '16px', height: '16px' }} />
-                  <span className="hidden-mobile-text">Stats</span>
-                </button>
-                <button
-                  onClick={onLogout}
-                  className="superbet-outline-button header-nav-btn"
-                  title="Ieșire"
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <LogOut className="header-icon" style={{ width: '16px', height: '16px' }} />
-                  <span className="hidden-mobile-text">Ieșire</span>
-                </button>
-              </div>
+              <button
+                onClick={onLogout}
+                className="superbet-outline-button header-nav-btn"
+                title="Ieșire"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <LogOut className="header-icon" style={{ width: '16px', height: '16px' }} />
+                <span className="hidden-mobile-text">Ieșire</span>
+              </button>
             </>
           )}
         </div>
@@ -173,10 +117,6 @@ export default function Header({ currentUser, onLogout, onOpenH2H, pendingChalle
           
           .header-actions {
             gap: 12px !important;
-          }
-          
-          .header-buttons {
-            gap: 8px !important;
           }
           
           .header-nav-btn {
@@ -226,10 +166,6 @@ export default function Header({ currentUser, onLogout, onOpenH2H, pendingChalle
           
           .header-actions {
             gap: 8px !important;
-          }
-          
-          .header-buttons {
-            gap: 6px !important;
           }
           
           .header-nav-btn {

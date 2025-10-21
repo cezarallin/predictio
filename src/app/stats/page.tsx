@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Trophy, Target, TrendingUp, Calendar, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Header from '@/components/Header';
+import BottomNav from '@/components/BottomNav';
+import H2HManager from '@/components/H2HManager';
 
 interface StatsData {
   weeklyStats: WeeklyStats[];
@@ -90,6 +92,8 @@ export default function StatsPage() {
   const [isH2HExpanded, setIsH2HExpanded] = useState(false);
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
   const [showBadgeLegend, setShowBadgeLegend] = useState(false);
+  const [showH2HManager, setShowH2HManager] = useState(false);
+  const [pendingChallengesCount, setPendingChallengesCount] = useState(0);
 
   useEffect(() => {
     // Check for stored user in localStorage
@@ -110,8 +114,38 @@ export default function StatsPage() {
   useEffect(() => {
     if (currentUser) {
       loadStatsData();
+      fetchPendingChallengesCount();
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    const handleOpenH2HEvent = () => {
+      setShowH2HManager(true);
+      fetchPendingChallengesCount();
+    };
+
+    window.addEventListener('openH2H', handleOpenH2HEvent);
+    return () => window.removeEventListener('openH2H', handleOpenH2HEvent);
+  }, []);
+
+  const fetchPendingChallengesCount = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const response = await fetch(`/api/h2h?userId=${currentUser.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const challenges = data.challenges || [];
+        const pendingForUser = challenges.filter((challenge: any) => 
+          challenge.status === 'pending' && challenge.challenged_id === currentUser.id
+        );
+        setPendingChallengesCount(pendingForUser.length);
+      }
+    } catch (error) {
+      console.error('Error fetching pending challenges count:', error);
+      setPendingChallengesCount(0);
+    }
+  };
 
   const loadStatsData = async () => {
     try {
@@ -143,7 +177,13 @@ export default function StatsPage() {
   };
 
   const navigateToH2H = () => {
-    window.location.href = '/?openH2H=true';
+    setShowH2HManager(true);
+    fetchPendingChallengesCount();
+  };
+
+  const handleCloseH2H = () => {
+    setShowH2HManager(false);
+    fetchPendingChallengesCount();
   };
 
   const toggleWeek = (weekName: string) => {
@@ -291,7 +331,7 @@ export default function StatsPage() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--superbet-bg)' }}>
-        <Header currentUser={currentUser} onLogout={handleLogout} onOpenH2H={navigateToH2H} />
+        <Header currentUser={currentUser} onLogout={handleLogout} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
           <LoadingSpinner />
         </div>
@@ -302,7 +342,7 @@ export default function StatsPage() {
   if (!statsData) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--superbet-bg)' }}>
-        <Header currentUser={currentUser} onLogout={handleLogout} onOpenH2H={navigateToH2H} />
+        <Header currentUser={currentUser} onLogout={handleLogout} />
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
           <p>Nu s-au putut încărca statisticile.</p>
           <button onClick={navigateHome} className="superbet-button">
@@ -314,8 +354,8 @@ export default function StatsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--superbet-light-gray)' }}>
-      <Header currentUser={currentUser} onLogout={handleLogout} onOpenH2H={navigateToH2H} />
+    <div style={{ minHeight: '100vh', background: 'var(--superbet-light-gray)', paddingBottom: '80px' }}>
+      <Header currentUser={currentUser} onLogout={handleLogout} />
       
       <main style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
         {/* Back button */}
@@ -2478,6 +2518,16 @@ export default function StatsPage() {
           </div>
         </div>
       </footer>
+
+      <BottomNav pendingChallengesCount={pendingChallengesCount} />
+
+      {showH2HManager && currentUser && (
+        <H2HManager 
+          currentUser={currentUser}
+          isOpen={showH2HManager}
+          onClose={handleCloseH2H}
+        />
+      )}
     </div>
   );
 }

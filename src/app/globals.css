@@ -425,3 +425,54 @@ html, body {
   .segment-text:nth-child(7) { transform: rotate(292.5deg) translateY(-65px) rotate(-292.5deg) !important; }
   .segment-text:nth-child(8) { transform: rotate(337.5deg) translateY(-65px) rotate(-337.5deg) !important; }
 }
+
+/* Bank grid responsive - Modern responsive design */
+.bank-grid {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+/* Mobile - 2 columns for less vertical scroll */
+@media (max-width: 768px) {
+  .bank-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+}
+
+/* Tablet and Desktop - 3 columns */
+@media (min-width: 769px) {
+  .bank-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 16px !important;
+  }
+}
+
+/* Bank card responsive styling */
+@media (max-width: 768px) {
+  .bank-card {
+    padding: 14px !important;
+  }
+  
+  .bank-card-title {
+    font-size: 15px !important;
+    margin-bottom: 10px !important;
+  }
+  
+  .bank-card-label {
+    font-size: 11px !important;
+  }
+  
+  /* Hide "Plasate" text on mobile */
+  .bank-card-label .hide-on-mobile {
+    display: none !important;
+  }
+  
+  .bank-card-amount {
+    font-size: 14px !important;
+  }
+  
+  .bank-card-balance {
+    font-size: 16px !important;
+  }
+}

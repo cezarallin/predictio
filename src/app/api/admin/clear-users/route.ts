@@ -27,14 +27,17 @@ export async function POST(request: NextRequest) {
     console.log(`🗑️ Admin ${adminUserId} clearing all non-admin users and related data...`);
 
     // Clear all related data first (to avoid foreign key constraints)
+    // NOTE: We do NOT clear bank entries - they will be preserved with user_name
     clearAllPredictions.run();
     clearAllPlayerBoosts.run();
     clearAllReactions.run();
     clearAllSecondChances.run();
     clearAllSuperSpins.run();
-    clearAllH2HChallenges.run(); // Clear H2H challenges before deleting users
+    clearAllH2HChallenges.run();
     
     // Delete only non-admin users
+    // Bank entries will have their user_id set to NULL (ON DELETE SET NULL)
+    // but user_name will be preserved for history
     const deleteNonAdminUsers = db.prepare(`
       DELETE FROM users WHERE is_admin = 0 OR is_admin IS NULL
     `);
@@ -43,7 +46,7 @@ export async function POST(request: NextRequest) {
     console.log(`✅ Deleted ${result.changes} non-admin users and all related data by admin ${adminUserId}`);
 
     return NextResponse.json({ 
-      message: `Successfully deleted ${result.changes} non-admin users and all related data (predictions, boosts, reactions, second chances, super spins, H2H challenges). Admin users preserved.`,
+      message: `Successfully deleted ${result.changes} non-admin users and related data (predictions, boosts, reactions, second chances, super spins, H2H challenges). Bank entries preserved with user names. Admin users preserved.`,
       clearedBy: adminUserId,
       timestamp: new Date().toISOString()
     });

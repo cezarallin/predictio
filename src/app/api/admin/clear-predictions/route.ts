@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByName, clearAllPredictions } from '@/lib/database';
+import { getUserByName, clearAllPredictions, incrementCurrentWeek, resetAllPlayTypesToFun } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,21 +23,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    console.log(`🗑️ Admin ${userId} clearing all predictions...`);
+    console.log(`🗑️ Admin ${userId} resetting leaderboard (clearing predictions and incrementing week)...`);
 
     // Clear all predictions from database
     clearAllPredictions.run();
     
-    console.log(`✅ All predictions cleared by admin ${userId}`);
+    // Reset all play types to 'fun'
+    resetAllPlayTypesToFun();
+    
+    // Increment current week - this will "hide" all users until they login again
+    const newWeek = incrementCurrentWeek();
+    
+    console.log(`✅ Leaderboard reset by admin ${userId}. New week: ${newWeek}. All users hidden until they log in. All play types reset to 'fun'.`);
 
     return NextResponse.json({ 
-      message: 'All predictions cleared successfully',
+      message: `Clasament resetat cu succes. Săptămâna nouă: ${newWeek}. Utilizatorii vor apărea doar după autentificare. Toți joacă pentru 'Fun' până aleg 'Miza'.`,
       clearedBy: userId,
+      newWeek: newWeek,
       timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error('Error clearing predictions:', error);
-    return NextResponse.json({ error: 'Failed to clear predictions' }, { status: 500 });
+    console.error('Error resetting leaderboard:', error);
+    return NextResponse.json({ error: 'Failed to reset leaderboard' }, { status: 500 });
   }
 }

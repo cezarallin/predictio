@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateUserPlayType, getUserPlayType } from '@/lib/database';
+import { updateUserPlayType, getUserPlayType, addBankEntry } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +14,12 @@ export async function POST(request: NextRequest) {
     }
 
     updateUserPlayType.run(playType, userId);
+
+    // Automatically deduct 50 RON from bank when user chooses 'miza'
+    if (playType === 'miza') {
+      addBankEntry.run(userId, userId, 'out', 50, null, 'Participare miza automată');
+      console.log(`✅ Automatically deducted 50 RON from bank for user ${userId} (miza)`);
+    }
 
     return NextResponse.json({ success: true, message: 'Tipul de joc a fost actualizat cu succes' });
   } catch (error) {

@@ -32,12 +32,12 @@ function initDatabase() {
     // Column already exists, that's fine
   }
 
-  // Reset existing play_type values to NULL (for users who had 'fun' set previously)
+  // Add active_week column to track which week a user is active in
   try {
-    db.exec(`UPDATE users SET play_type = NULL`); // Reset ALL play_type values to NULL
-    console.log('Reset ALL play_type values to NULL');
-  } catch (error) {
-    console.log('Error resetting play_type:', error);
+    db.exec(`ALTER TABLE users ADD COLUMN active_week INTEGER DEFAULT 0`);
+    console.log('Added active_week column to users table');
+  } catch {
+    // Column already exists, that's fine
   }
 
   // Matches are now stored in JSON file, not database
@@ -139,12 +139,126 @@ function initDatabase() {
     )
   `);
 
+  // Bank entries table - tracks miza entries and payouts
+  // Check if we need to migrate bank_entries table
+  const checkBankTable = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='bank_entries'`);
+  const existingBankTable = checkBankTable.get() as { sql: string } | undefined;
+  
+  if (existingBankTable && !existingBankTable.sql.includes('ON DELETE SET NULL')) {
+    console.log('🔄 Migrating bank_entries table to support ON DELETE SET NULL...');
+    
+    // Create new table with proper foreign key constraint
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS bank_entries_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        user_name TEXT NOT NULL,
+        entry_type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        gameweek TEXT,
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+      )
+    `);
+    
+    // Copy data from old table to new table
+    try {
+      db.exec(`
+        INSERT INTO bank_entries_new (id, user_id, user_name, entry_type, amount, gameweek, notes, created_at)
+        SELECT be.id, be.user_id, u.name as user_name, be.entry_type, be.amount, be.gameweek, be.notes, be.created_at
+        FROM bank_entries be
+        JOIN users u ON be.user_id = u.id
+      `);
+      
+      // Drop old table and rename new one
+      db.exec(`DROP TABLE bank_entries`);
+      db.exec(`ALTER TABLE bank_entries_new RENAME TO bank_entries`);
+      
+      console.log('✅ Successfully migrated bank_entries table');
+    } catch (migrationError) {
+      console.log('⚠️ Migration failed, creating fresh table:', migrationError);
+      // If migration fails, just drop the new table and continue
+      try {
+        db.exec(`DROP TABLE IF EXISTS bank_entries_new`);
+      } catch (e) {
+        // Ignore
+      }
+    }
+  }
+  
+  // Ensure bank_entries table exists with proper structure
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bank_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      user_name TEXT NOT NULL,
+      entry_type TEXT NOT NULL,
+      amount REAL NOT NULL,
+      gameweek TEXT,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+    )
+  `);
+
+  // Finalized gameweeks table - tracks which gameweeks have been finalized
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS finalized_gameweeks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      gameweek TEXT UNIQUE NOT NULL,
+      winner_id INTEGER NOT NULL,
+      winner_name TEXT NOT NULL,
+      total_pot REAL NOT NULL,
+      total_players INTEGER NOT NULL,
+      finalized_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (winner_id) REFERENCES users (id)
+    )
+  `);
+
+  // Whitelisted users table - permanent users for POC that auto-recreate on login
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS whitelisted_users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Populate whitelisted users if table is empty
+  try {
+    const checkWhitelisted = db.prepare('SELECT COUNT(*) as count FROM whitelisted_users');
+    const result = checkWhitelisted.get() as { count: number };
+    
+    if (result.count === 0) {
+      const insertWhitelisted = db.prepare('INSERT INTO whitelisted_users (name) VALUES (?)');
+      const whitelistedNames = ['Cezar', 'Tony', 'Dew', 'mihai94', 'Tone Andrei', 'Flo'];
+      
+      whitelistedNames.forEach(name => {
+        try {
+          insertWhitelisted.run(name);
+        } catch (e) {
+          // Ignore duplicates
+        }
+      });
+      
+      console.log('✅ Initialized whitelisted users for POC');
+    }
+  } catch (error) {
+    console.log('Error initializing whitelisted users:', error);
+  }
+
   // Initialize default settings
   try {
     const checkSetting = db.prepare('SELECT * FROM app_settings WHERE key = ?');
     if (!checkSetting.get('results_enabled')) {
       db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)').run('results_enabled', 'true');
       console.log('Initialized results_enabled setting to true');
+    }
+    // Initialize current_week counter if it doesn't exist
+    if (!checkSetting.get('current_week')) {
+      db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)').run('current_week', '1');
+      console.log('Initialized current_week setting to 1');
     }
   } catch (error) {
     console.log('Error initializing settings:', error);
@@ -456,6 +570,112 @@ export const resetDatabase = () => {
   clearAllSuperSpins.run();
   clearAllH2HChallenges.run();
   console.log('🗑️ All users, predictions, reactions, boosts, second chances, super spins and H2H challenges cleared');
+};
+
+// Bank operations
+export const addBankEntry = db.prepare(`
+  INSERT INTO bank_entries (user_id, user_name, entry_type, amount, gameweek, notes)
+  VALUES (?, (SELECT name FROM users WHERE id = ?), ?, ?, ?, ?)
+`);
+
+export const getAllBankEntries = db.prepare(`
+  SELECT * FROM bank_entries
+  ORDER BY created_at DESC
+`);
+
+export const getUserBankEntries = db.prepare(`
+  SELECT * FROM bank_entries WHERE user_id = ? ORDER BY created_at DESC
+`);
+
+export const clearAllBankEntries = db.prepare(`
+  DELETE FROM bank_entries
+`);
+
+// Finalized gameweeks operations
+export const addFinalizedGameweek = db.prepare(`
+  INSERT INTO finalized_gameweeks (gameweek, winner_id, winner_name, total_pot, total_players)
+  VALUES (?, ?, ?, ?, ?)
+`);
+
+export const isGameweekFinalized = db.prepare(`
+  SELECT * FROM finalized_gameweeks WHERE gameweek = ?
+`);
+
+export const getAllFinalizedGameweeks = db.prepare(`
+  SELECT * FROM finalized_gameweeks ORDER BY finalized_at DESC
+`);
+
+export const clearAllFinalizedGameweeks = db.prepare(`
+  DELETE FROM finalized_gameweeks
+`);
+
+// Whitelisted users operations
+export const isUserWhitelisted = db.prepare(`
+  SELECT * FROM whitelisted_users WHERE name = ?
+`);
+
+export const getAllWhitelistedUsers = db.prepare(`
+  SELECT * FROM whitelisted_users ORDER BY name
+`);
+
+export const addWhitelistedUser = db.prepare(`
+  INSERT INTO whitelisted_users (name) VALUES (?)
+`);
+
+export const removeWhitelistedUser = db.prepare(`
+  DELETE FROM whitelisted_users WHERE name = ?
+`);
+
+// Week management
+export const getCurrentWeek = db.prepare(`
+  SELECT value FROM app_settings WHERE key = 'current_week'
+`);
+
+export const incrementCurrentWeek = () => {
+  const currentWeekResult = getCurrentWeek.get() as { value: string } | undefined;
+  const currentWeek = currentWeekResult ? parseInt(currentWeekResult.value) : 1;
+  const newWeek = currentWeek + 1;
+  
+  const updateWeek = db.prepare(`
+    UPDATE app_settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = 'current_week'
+  `);
+  updateWeek.run(newWeek.toString());
+  
+  return newWeek;
+};
+
+export const setUserActiveWeek = db.prepare(`
+  UPDATE users SET active_week = ? WHERE id = ?
+`);
+
+export const getActiveUsers = () => {
+  const currentWeekResult = getCurrentWeek.get() as { value: string } | undefined;
+  const currentWeek = currentWeekResult ? parseInt(currentWeekResult.value) : 1;
+  
+  const query = db.prepare(`
+    SELECT * FROM users WHERE active_week = ? AND (is_admin = 0 OR is_admin IS NULL)
+  `);
+  
+  return query.all(currentWeek);
+};
+
+export const getAllActiveUsersIncludingAdmins = () => {
+  const currentWeekResult = getCurrentWeek.get() as { value: string } | undefined;
+  const currentWeek = currentWeekResult ? parseInt(currentWeekResult.value) : 1;
+  
+  const query = db.prepare(`
+    SELECT * FROM users WHERE active_week = ? OR is_admin = 1
+  `);
+  
+  return query.all(currentWeek);
+};
+
+export const resetAllPlayTypesToFun = () => {
+  const updatePlayTypes = db.prepare(`
+    UPDATE users SET play_type = 'fun' WHERE is_admin = 0 OR is_admin IS NULL
+  `);
+  updatePlayTypes.run();
+  console.log('✅ Reset all play_type values to fun');
 };
 
 export default db;

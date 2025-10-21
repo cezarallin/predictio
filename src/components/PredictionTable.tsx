@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, Calendar, Trophy, Trash2, RotateCcw, UserX, EyeOff, Sparkles, RotateCw, Ban } from 'lucide-react';
+import { CheckCircle, Calendar, Trophy, Trash2, RotateCcw, UserX, EyeOff, Sparkles, RotateCw, Ban, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import LoadingSpinner from './LoadingSpinner';
 // import SuperSpinWheel from './SuperSpinWheel'; // HIDDEN TEMPORARILY
@@ -477,35 +477,74 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
     }
   };
 
-  const clearAllUsers = async () => {
-    if (!confirm('⚠️ Ești sigur că vrei să ștergi toți utilizatorii NON-ADMIN și predicțiile lor? Adminii vor fi păstrați!')) {
-      return;
-    }
-
-    // Double confirmation for this destructive action
-    if (!confirm('⚠️ CONFIRMĂ: Vei șterge toți jucătorii (nu adminii). Continuă?')) {
+  const finalizeGameweek = async () => {
+    if (!confirm('Sigur vrei să finalizezi săptămâna și să calculezi câștigurile pentru jucătorii cu miza?')) {
       return;
     }
 
     try {
-      const response = await fetch('/api/admin/clear-users', {
+      // Get current standings from stats
+      const statsResponse = await fetch('/api/stats');
+      const statsData = await statsResponse.json();
+      
+      if (!statsData.playerStats || statsData.playerStats.length === 0) {
+        alert('❌ Nu există statistici pentru a determina câștigătorul');
+        return;
+      }
+
+      // Get sorted standings
+      const standings = statsData.playerStats
+        .sort((a: any, b: any) => a.rank - b.rank)
+        .map((p: any) => ({ name: p.name, rank: p.rank, points: p.totalPoints }));
+
+      // Call finalize API with automatic gameweek name
+      const response = await fetch('/api/admin/finalize-gameweek', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ standings })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`✅ ${data.message}\n\n🏆 Câștigător: ${data.winner}\n💰 Câștig: ${data.winnings} RON\n👥 Jucători: ${data.totalPlayers}\n💵 Pool Total: ${data.totalPot} RON`);
+        loadData(); // Refresh data
+      } else {
+        const errorMessage = data.alreadyFinalized 
+          ? `⚠️ ${data.error}\n\nAceastă săptămână a fost deja finalizată. Nu se poate finaliza de două ori.`
+          : data.message || data.error || 'Eroare la finalizarea săptămânii';
+        alert(`❌ ${errorMessage}`);
+      }
+    } catch (error) {
+      console.error('Error finalizing gameweek:', error);
+      alert('❌ Eroare la finalizarea săptămânii');
+    }
+  };
+
+  const resetLeaderboard = async () => {
+    if (!confirm('⚠️ Ești sigur că vrei să resetezi clasamentul? Acest lucru va șterge toate predicțiile, rezultatele și boost-urile pentru săptămâna curentă. Utilizatorii și datele din bancă vor fi păstrate.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/clear-predictions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          adminUserId: currentUser.name,
+          userId: currentUser.name,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        alert(`✅ ${data.message}`);
-        loadData(); // Just reload data instead of full page refresh
+        alert(`✅ ${data.message}\n\nUtilizatorii au fost păstrați și se pot loga din nou pentru săptămâna nouă.`);
+        loadData();
       } else {
         const errorData = await response.json();
         alert(`❌ Error: ${errorData.error}`);
       }
     } catch (error) {
-      console.error('Failed to clear users:', error);
+      console.error('Failed to reset leaderboard:', error);
     }
   };
 
@@ -1109,7 +1148,7 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                 <span className="show-mobile-text">Șterge R.</span>
               </button>
               <button
-                onClick={clearAllUsers}
+                onClick={resetLeaderboard}
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -1133,9 +1172,38 @@ export default function PredictionTable({ currentUser }: PredictionTableProps) {
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <UserX style={{ width: '16px', height: '16px' }} />
-                <span className="hidden-mobile-text">Șterge Jucători</span>
-                <span className="show-mobile-text">Șterge J.</span>
+                <RotateCcw style={{ width: '16px', height: '16px' }} />
+                <span className="hidden-mobile-text">Resetează Clasament</span>
+                <span className="show-mobile-text">Reset C.</span>
+              </button>
+              <button
+                onClick={finalizeGameweek}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px',
+                  padding: '8px 16px',
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <Wallet style={{ width: '16px', height: '16px' }} />
+                <span className="hidden-mobile-text">Finalizează Săptămâna</span>
+                <span className="show-mobile-text">Fin. S.</span>
               </button>
             </div>
           )}
