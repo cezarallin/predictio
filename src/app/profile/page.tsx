@@ -57,6 +57,26 @@ export default function ProfilePage() {
   const [h2hPlayerStats, setH2hPlayerStats] = useState<Record<string, { wins: number; total: number }>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showH2HManager, setShowH2HManager] = useState(false);
+  const [pendingChallengesCount, setPendingChallengesCount] = useState(0);
+
+  const fetchPendingChallengesCount = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const response = await fetch(`/api/h2h?userId=${currentUser.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const challenges = data.challenges || [];
+        const pendingForUser = challenges.filter((challenge: any) => 
+          challenge.status === 'pending' && challenge.challenged_id === currentUser.id
+        );
+        setPendingChallengesCount(pendingForUser.length);
+      }
+    } catch (error) {
+      console.error('Error fetching pending challenges count:', error);
+      setPendingChallengesCount(0);
+    }
+  };
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
@@ -68,8 +88,17 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
+    if (currentUser) {
+      fetchPendingChallengesCount();
+      const interval = setInterval(fetchPendingChallengesCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
     const handleOpenH2HEvent = () => {
       setShowH2HManager(true);
+      fetchPendingChallengesCount();
     };
 
     window.addEventListener('openH2H', handleOpenH2HEvent);
@@ -102,6 +131,7 @@ export default function ProfilePage() {
 
   const handleCloseH2H = () => {
     setShowH2HManager(false);
+    fetchPendingChallengesCount();
   };
 
   const getUserAvatar = (name: string) => {
@@ -441,13 +471,37 @@ export default function ProfilePage() {
               </div>
               
               <div style={{ height: '300px', position: 'relative' }}>
-                <svg width="100%" height="100%" viewBox="0 0 400 300" preserveAspectRatio="none">
+                <svg width="100%" height="100%" viewBox="0 0 400 320" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <linearGradient id="rankGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                       <stop offset="0%" stopColor="var(--superbet-red)" stopOpacity="0.3" />
                       <stop offset="100%" stopColor="var(--superbet-red)" stopOpacity="0" />
                     </linearGradient>
                   </defs>
+                  
+                  {/* Legendă - Axa Y (Poziție) */}
+                  <text 
+                    x="40" 
+                    y="15" 
+                    fill="var(--superbet-gray)" 
+                    fontSize="11"
+                    fontWeight="bold"
+                    textAnchor="start"
+                  >
+                    Poziție
+                  </text>
+                  
+                  {/* Legendă - Axa X (Săptămână) */}
+                  <text 
+                    x="200" 
+                    y="310" 
+                    fill="var(--superbet-gray)" 
+                    fontSize="11"
+                    fontWeight="bold"
+                    textAnchor="middle"
+                  >
+                    Săptămână
+                  </text>
                   
                   <line x1="40" y1="250" x2="360" y2="250" stroke="var(--superbet-border)" strokeWidth="2" />
                   <line x1="40" y1="30" x2="40" y2="250" stroke="var(--superbet-border)" strokeWidth="2" />
@@ -465,7 +519,7 @@ export default function ProfilePage() {
                         opacity="0.3"
                       />
                       <text 
-                        x="25" 
+                        x="28" 
                         y={35 + ((rank - 1) * 220 / 5)} 
                         fill="var(--superbet-gray)" 
                         fontSize="12"
@@ -539,13 +593,37 @@ export default function ProfilePage() {
               </div>
               
               <div style={{ height: '300px', position: 'relative' }}>
-                <svg width="100%" height="100%" viewBox="0 0 400 300" preserveAspectRatio="none">
+                <svg width="100%" height="100%" viewBox="0 0 400 320" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <linearGradient id="accuracyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                       <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
                       <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
                     </linearGradient>
                   </defs>
+                  
+                  {/* Legendă - Axa Y (Acuratețe) */}
+                  <text 
+                    x="40" 
+                    y="15" 
+                    fill="var(--superbet-gray)" 
+                    fontSize="11"
+                    fontWeight="bold"
+                    textAnchor="start"
+                  >
+                    Acuratețe (%)
+                  </text>
+                  
+                  {/* Legendă - Axa X (Săptămână) */}
+                  <text 
+                    x="200" 
+                    y="310" 
+                    fill="var(--superbet-gray)" 
+                    fontSize="11"
+                    fontWeight="bold"
+                    textAnchor="middle"
+                  >
+                    Săptămână
+                  </text>
                   
                   <line x1="40" y1="250" x2="360" y2="250" stroke="var(--superbet-border)" strokeWidth="2" />
                   <line x1="40" y1="30" x2="40" y2="250" stroke="var(--superbet-border)" strokeWidth="2" />
@@ -563,7 +641,7 @@ export default function ProfilePage() {
                         opacity="0.3"
                       />
                       <text 
-                        x="25" 
+                        x="28" 
                         y={255 - (acc * 220 / 100)} 
                         fill="var(--superbet-gray)" 
                         fontSize="12"
@@ -620,7 +698,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <BottomNav />
+        <BottomNav pendingChallengesCount={pendingChallengesCount} />
 
         {showH2HManager && currentUser && (
           <H2HManager 

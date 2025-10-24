@@ -632,7 +632,7 @@ export default function StatsPage() {
             </div>
           </div>
           
-          {isWeeklyExpanded && statsData.weeklyStats.map((week) => {
+          {isWeeklyExpanded && [...statsData.weeklyStats].reverse().map((week) => {
             const sortedPlayers = Object.entries(week.players).sort(([, a], [, b]) => b.points - a.points);
             const topThree = sortedPlayers.slice(0, 3);
             const restPlayers = sortedPlayers.slice(3);

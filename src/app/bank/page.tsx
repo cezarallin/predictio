@@ -33,6 +33,26 @@ export default function BankPage() {
   const [userBalances, setUserBalances] = useState<UserBalance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showH2HManager, setShowH2HManager] = useState(false);
+  const [pendingChallengesCount, setPendingChallengesCount] = useState(0);
+
+  const fetchPendingChallengesCount = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const response = await fetch(`/api/h2h?userId=${currentUser.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const challenges = data.challenges || [];
+        const pendingForUser = challenges.filter((challenge: any) => 
+          challenge.status === 'pending' && challenge.challenged_id === currentUser.id
+        );
+        setPendingChallengesCount(pendingForUser.length);
+      }
+    } catch (error) {
+      console.error('Error fetching pending challenges count:', error);
+      setPendingChallengesCount(0);
+    }
+  };
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
@@ -43,8 +63,17 @@ export default function BankPage() {
   }, []);
 
   useEffect(() => {
+    if (currentUser) {
+      fetchPendingChallengesCount();
+      const interval = setInterval(fetchPendingChallengesCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
     const handleOpenH2HEvent = () => {
       setShowH2HManager(true);
+      fetchPendingChallengesCount();
     };
 
     window.addEventListener('openH2H', handleOpenH2HEvent);
@@ -99,6 +128,7 @@ export default function BankPage() {
 
   const handleCloseH2H = () => {
     setShowH2HManager(false);
+    fetchPendingChallengesCount();
   };
 
   const totalPool = userBalances.reduce((sum, u) => sum + u.moneyOut, 0);
@@ -372,7 +402,7 @@ export default function BankPage() {
           )}
         </div>
 
-        <BottomNav />
+        <BottomNav pendingChallengesCount={pendingChallengesCount} />
 
         {showH2HManager && currentUser && (
           <H2HManager 

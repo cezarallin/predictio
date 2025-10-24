@@ -74,13 +74,37 @@ export default function BottomNav({ pendingChallengesCount = 0 }: BottomNavProps
               }}
               className="bottom-nav-item"
             >
-              <Icon
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  transition: 'transform 0.2s ease'
-                }}
-              />
+              <div style={{ position: 'relative' }}>
+                <Icon
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    transition: 'transform 0.2s ease'
+                  }}
+                />
+                {item.id === 'h2h' && pendingChallengesCount > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-6px',
+                    background: 'var(--superbet-red)',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    border: '2px solid var(--superbet-card-bg)',
+                    boxShadow: '0 2px 4px rgba(220, 38, 38, 0.4)',
+                    animation: 'pulse-badge 2s ease-in-out infinite'
+                  }}>
+                    {pendingChallengesCount}
+                  </div>
+                )}
+              </div>
               <span style={{
                 fontSize: '11px',
                 fontWeight: isActive ? '600' : '500',
@@ -112,6 +136,15 @@ export default function BottomNav({ pendingChallengesCount = 0 }: BottomNavProps
         
         .bottom-nav-item:active {
           transform: scale(0.95);
+        }
+        
+        @keyframes pulse-badge {
+          0%, 100% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.1);
+          }
         }
         
         @media (max-width: 480px) {

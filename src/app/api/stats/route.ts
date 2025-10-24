@@ -442,6 +442,39 @@ const H2H_HISTORICAL_DATA = [
     challengedOdds: 5.88,
     matchDate: "2025-10-20",
     completedAt: "2025-10-20"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Cezar",
+    winner: "mihai94",
+    challengerScore: 8,
+    challengedScore: 5,
+    challengerOdds: 14.55,
+    challengedOdds: 8.17,
+    matchDate: "2025-10-21",
+    completedAt: "2025-10-21"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Cezar",
+    winner: "mihai94",
+    challengerScore: 7,
+    challengedScore: 5,
+    challengerOdds: 12.03,
+    challengedOdds: 6.94,
+    matchDate: "2025-10-22",
+    completedAt: "2025-10-22"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Cezar",
+    winner: "mihai94",
+    challengerScore: 10,
+    challengedScore: 6,
+    challengerOdds: 22.11,
+    challengedOdds: 11.03,
+    matchDate: "2025-10-23",
+    completedAt: "2025-10-23"
   }
 ];
 
@@ -516,6 +549,18 @@ const HISTORICAL_DATA = {
       "Flo": { rank: 4, points: 60.68, odds: 148.05, correct: 25, accuracy: 45, total: 56 },
       "Tony": { rank: 5, points: 58.84, odds: 174.25, correct: 21, accuracy: 38, total: 56 },
       "Dew": { rank: 6, points: 49.19, odds: 142.52, correct: 23, accuracy: 41, total: 56 }
+    }
+  },
+  week7: {
+    name: "Săptămâna 7 (Oct 21-23)",
+    totalMatches: 36,
+    players: {
+      "mihai94": { rank: 1, points: 48.69, odds: 78.21, correct: 25, accuracy: 69, total: 36 },
+      "Dew": { rank: 2, points: 40.44, odds: 79.27, correct: 23, accuracy: 64, total: 36 },
+      "Tone Andrei": { rank: 3, points: 40.13, odds: 83.07, correct: 21, accuracy: 58, total: 36 },
+      "Flo": { rank: 4, points: 35.11, odds: 83.01, correct: 20, accuracy: 56, total: 36 },
+      "Tony": { rank: 5, points: 29.41, odds: 101.55, correct: 16, accuracy: 44, total: 36 },
+      "Cezar": { rank: 6, points: 28.14, odds: 90.80, correct: 16, accuracy: 44, total: 36 }
     }
   }
 };
@@ -604,8 +649,7 @@ function calculatePlayerStats() {
 function calculateWeeklyStats() {
   const weeks = Object.keys(HISTORICAL_DATA);
   
-  // Inversez ordinea săptămânilor pentru a avea cele mai recente primele (3, 2, 1)
-  return weeks.reverse().map(weekKey => {
+  return weeks.map(weekKey => {
     const weekData = HISTORICAL_DATA[weekKey as keyof typeof HISTORICAL_DATA];
     
     return {
@@ -619,6 +663,7 @@ function calculateWeeklyStats() {
             total: data.total,
             accuracy: data.accuracy,
             points: data.points,
+            rank: data.rank,
             boosts: Math.floor(Math.random() * 2), // Simulat
             reactions: Math.floor(Math.random() * 5) + 1 // Simulat
           }
