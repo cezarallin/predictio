@@ -105,7 +105,33 @@ export default function Home() {
               <LoginForm onLogin={handleLogin} />
             </div>
           ) : (
-            <PredictionTable currentUser={currentUser} />
+            <>
+              {/* Gameweek Badge */}
+              <div style={{
+                marginBottom: '20px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  fontSize: '18px',
+                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span style={{ fontSize: '24px' }}>🏆</span>
+                  <span>GAMEWEEK 9</span>
+                </div>
+              </div>
+              <PredictionTable currentUser={currentUser} />
+            </>
           )}
         </div>
       </main>

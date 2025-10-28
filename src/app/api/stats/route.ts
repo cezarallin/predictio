@@ -475,6 +475,193 @@ const H2H_HISTORICAL_DATA = [
     challengedOdds: 11.03,
     matchDate: "2025-10-23",
     completedAt: "2025-10-23"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Tony",
+    winner: "Tony",
+    challengerScore: 10,
+    challengedScore: 10,
+    challengerOdds: 10.90,
+    challengedOdds: 30.71,
+    matchDate: "2025-10-25",
+    completedAt: "2025-10-25"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Dew",
+    winner: "Dew",
+    challengerScore: 1,
+    challengedScore: 3,
+    challengerOdds: 3.05,
+    challengedOdds: 11.04,
+    matchDate: "2025-10-25",
+    completedAt: "2025-10-25"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Tony",
+    winner: "mihai94",
+    challengerScore: 3,
+    challengedScore: 2,
+    challengerOdds: 5.68,
+    challengedOdds: 3.44,
+    matchDate: "2025-10-26",
+    completedAt: "2025-10-26"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Cezar",
+    winner: "Cezar",
+    challengerScore: 2,
+    challengedScore: 2,
+    challengerOdds: 3.64,
+    challengedOdds: 4.22,
+    matchDate: "2025-10-26",
+    completedAt: "2025-10-26"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Dew",
+    winner: "Dew",
+    challengerScore: 10,
+    challengedScore: 11,
+    challengerOdds: 20.18,
+    challengedOdds: 25.34,
+    matchDate: "2025-10-27",
+    completedAt: "2025-10-27"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Tony",
+    winner: "Tony",
+    challengerScore: 10,
+    challengedScore: 12,
+    challengerOdds: 20.18,
+    challengedOdds: 30.70,
+    matchDate: "2025-10-27",
+    completedAt: "2025-10-27"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Cezar",
+    winner: "Tony",
+    challengerScore: 12,
+    challengedScore: 11,
+    challengerOdds: 30.70,
+    challengedOdds: 23.42,
+    matchDate: "2025-10-27",
+    completedAt: "2025-10-27"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Cezar",
+    winner: "Cezar",
+    challengerScore: 10,
+    challengedScore: 11,
+    challengerOdds: 20.18,
+    challengedOdds: 23.42,
+    matchDate: "2025-10-27",
+    completedAt: "2025-10-27"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Dew",
+    winner: "mihai94",
+    challengerScore: 10,
+    challengedScore: 10,
+    challengerOdds: 14.30,
+    challengedOdds: 10.49,
+    matchDate: "2025-10-28",
+    completedAt: "2025-10-28"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Cezar",
+    winner: "Tony",
+    challengerScore: 10,
+    challengedScore: 10,
+    challengerOdds: 20.71,
+    challengedOdds: 17.46,
+    matchDate: "2025-10-28",
+    completedAt: "2025-10-28"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Cezar",
+    winner: "Cezar",
+    challengerScore: 10,
+    challengedScore: 10,
+    challengerOdds: 10.90,
+    challengedOdds: 17.46,
+    matchDate: "2025-10-28",
+    completedAt: "2025-10-28"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Dew",
+    winner: "Dew",
+    challengerScore: 1,
+    challengedScore: 2,
+    challengerOdds: 3.05,
+    challengedOdds: 5.04,
+    matchDate: "2025-10-28",
+    completedAt: "2025-10-28"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Cezar",
+    winner: "Tony",
+    challengerScore: 3,
+    challengedScore: 4,
+    challengerOdds: 11.04,
+    challengedOdds: 10.22,
+    matchDate: "2025-10-28",
+    completedAt: "2025-10-28"
+  },
+  {
+    challenger: "Dew",
+    challenged: "Cezar",
+    winner: "Cezar",
+    challengerScore: 2,
+    challengedScore: 4,
+    challengerOdds: 5.04,
+    challengedOdds: 10.22,
+    matchDate: "2025-10-28",
+    completedAt: "2025-10-28"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Cezar",
+    winner: "Cezar",
+    challengerScore: 1,
+    challengedScore: 4,
+    challengerOdds: 3.05,
+    challengedOdds: 10.22,
+    matchDate: "2025-10-28",
+    completedAt: "2025-10-28"
+  },
+  {
+    challenger: "mihai94",
+    challenged: "Cezar",
+    winner: "mihai94",
+    challengerScore: 3,
+    challengedScore: 2,
+    challengerOdds: 5.68,
+    challengedOdds: 4.22,
+    matchDate: "2025-10-28",
+    completedAt: "2025-10-28"
+  },
+  {
+    challenger: "Dew",
+    challenged: "Tone Andrei",
+    winner: "Dew",
+    challengerScore: 2,
+    challengedScore: 1,
+    challengerOdds: 5.04,
+    challengedOdds: 3.01,
+    matchDate: "2025-10-28",
+    completedAt: "2025-10-28"
   }
 ];
 
@@ -561,6 +748,17 @@ const HISTORICAL_DATA = {
       "Flo": { rank: 4, points: 35.11, odds: 83.01, correct: 20, accuracy: 56, total: 36 },
       "Tony": { rank: 5, points: 29.41, odds: 101.55, correct: 16, accuracy: 44, total: 36 },
       "Cezar": { rank: 6, points: 28.14, odds: 90.80, correct: 16, accuracy: 44, total: 36 }
+    }
+  },
+  week8: {
+    name: "Săptămâna 8 (Oct 24-28)",
+    totalMatches: 56,
+    players: {
+      "Tony": { rank: 1, points: 66.09, odds: 153.04, correct: 27, accuracy: 48, total: 56 },
+      "Tone Andrei": { rank: 2, points: 57.99, odds: 141.49, correct: 26, accuracy: 46, total: 56 },
+      "Cezar": { rank: 3, points: 55.32, odds: 139.16, correct: 27, accuracy: 48, total: 56 },
+      "Dew": { rank: 4, points: 50.74, odds: 136.78, correct: 25, accuracy: 45, total: 56 },
+      "mihai94": { rank: 5, points: 45.81, odds: 140.73, correct: 24, accuracy: 43, total: 56 }
     }
   }
 };

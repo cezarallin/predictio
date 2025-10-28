@@ -155,8 +155,9 @@ export default function StatsPage() {
         const data = await response.json();
         setStatsData(data);
         if (data.weeklyStats && data.weeklyStats.length > 0) {
-          const firstWeek = data.weeklyStats[0].week;
-          setExpandedWeeks(new Set([firstWeek]));
+          // Expand the last week by default (most recent)
+          const lastWeek = data.weeklyStats[data.weeklyStats.length - 1].week;
+          setExpandedWeeks(new Set([lastWeek]));
         }
       }
     } catch (error) {

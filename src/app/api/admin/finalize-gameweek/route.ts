@@ -59,10 +59,16 @@ export async function POST(request: NextRequest) {
     // Get unique user IDs who participated with miza
     const mizaUserIds = [...new Set(currentPeriodMizaBets.map(entry => entry.user_id))];
     
+    console.log(`💰 Current period miza bets found: ${currentPeriodMizaBets.length}`);
+    console.log(`💰 Unique user IDs with miza: ${mizaUserIds.join(', ')}`);
+    console.log(`💰 User names with miza entries:`, currentPeriodMizaBets.map(e => e.user_name).join(', '));
+    
     // Filter to get miza players (exclude admins)
     const mizaPlayers = allUsers.filter(
       user => mizaUserIds.includes(user.id) && !user.is_admin
     );
+
+    console.log(`👥 Miza players (excluding admins):`, mizaPlayers.map(p => `${p.name} (ID: ${p.id})`).join(', '));
 
     if (mizaPlayers.length === 0) {
       return NextResponse.json(
@@ -74,7 +80,18 @@ export async function POST(request: NextRequest) {
     // Find the winner (rank 1 in standings among miza players)
     const mizaPlayerNames = mizaPlayers.map(p => p.name);
     const mizaStandings = standings.filter((player: any) => mizaPlayerNames.includes(player.name));
-    const winner = mizaStandings.sort((a: any, b: any) => a.rank - b.rank)[0];
+    
+    // Sort by points (descending), then by correct predictions (descending) as tiebreaker
+    const sortedMizaStandings = mizaStandings.sort((a: any, b: any) => {
+      // First compare by points
+      if (b.points !== a.points) {
+        return b.points - a.points;
+      }
+      // If points are equal, compare by correct predictions
+      return b.correct - a.correct;
+    });
+    
+    const winner = sortedMizaStandings[0];
     
     if (!winner) {
       return NextResponse.json(
@@ -82,6 +99,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    console.log(`🏆 Miza players: ${mizaPlayerNames.join(', ')}`);
+    console.log(`🏆 Winner among miza players: ${winner.name} with ${winner.points} points (${winner.correct} correct)`);
 
     const winnerUser = allUsers.find(u => u.name === winner.name);
     
@@ -123,7 +143,12 @@ export async function POST(request: NextRequest) {
     `);
     updateEntryGameweek.run(gameweek);
 
-    console.log(`✅ Finalized ${gameweek}: Winner ${winnerUser.name} won ${winnerGetsTotal} RON (${totalPot} RON total pool, ${mizaPlayers.length} players)`);
+    console.log(`✅ Finalized ${gameweek}:`);
+    console.log(`   Winner: ${winnerUser.name}`);
+    console.log(`   Winnings: ${winnerGetsTotal} RON`);
+    console.log(`   Total pool: ${totalPot} RON`);
+    console.log(`   Total players: ${mizaPlayers.length}`);
+    console.log(`   Miza players: ${mizaPlayerNames.join(', ')}`);
 
     return NextResponse.json({
       success: true,
@@ -131,7 +156,15 @@ export async function POST(request: NextRequest) {
       winner: winnerUser.name,
       winnings: winnerGetsTotal,
       totalPlayers: mizaPlayers.length,
-      totalPot
+      totalPot,
+      details: {
+        mizaPlayers: mizaPlayerNames,
+        sortedStandings: sortedMizaStandings.map((p: any) => ({
+          name: p.name,
+          points: p.points,
+          correct: p.correct
+        }))
+      }
     });
 
   } catch (error) {
