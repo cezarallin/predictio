@@ -1,6 +1,6 @@
 'use client';
 
-import { Wallet, User, Swords, BarChart3, Trophy } from 'lucide-react';
+import { User, Swords, BarChart3, Trophy } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 
 interface BottomNavProps {
@@ -13,7 +13,6 @@ export default function BottomNav({ pendingChallengesCount = 0 }: BottomNavProps
   
   const navItems = [
     { id: 'predictions', icon: Trophy, label: 'Predicții', path: '/' },
-    { id: 'bank', icon: Wallet, label: 'Bancă', path: '/bank' },
     { id: 'profile', icon: User, label: 'Profil', path: '/profile' },
     { id: 'h2h', icon: Swords, label: 'H2H', path: '/' },
     { id: 'stats', icon: BarChart3, label: 'Statistici', path: '/stats' },
@@ -46,7 +45,7 @@ export default function BottomNav({ pendingChallengesCount = 0 }: BottomNavProps
         maxWidth: '600px',
         margin: '0 auto',
         display: 'grid',
-        gridTemplateColumns: 'repeat(5, 1fr)',
+        gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '0'
       }}>
         {navItems.map((item) => {
