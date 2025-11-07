@@ -970,6 +970,138 @@ const H2H_HISTORICAL_DATA = [
     challengedOdds: 1.70,
     matchDate: "2025-10-31",
     completedAt: "2025-10-31"
+  },
+  {
+    challenger: "Tony",
+    challenged: "mihai94",
+    winner: "Tony",
+    challengerScore: 4,
+    challengedScore: 4,
+    challengerOdds: 10.62,
+    challengedOdds: 7.01,
+    matchDate: "2025-11-04",
+    completedAt: "2025-11-04"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Tone Andrei",
+    winner: "Tony",
+    challengerScore: 4,
+    challengedScore: 5,
+    challengerOdds: 10.62,
+    challengedOdds: 10.23,
+    matchDate: "2025-11-04",
+    completedAt: "2025-11-04"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Cezar",
+    winner: "Cezar",
+    challengerScore: 4,
+    challengedScore: 5,
+    challengerOdds: 10.62,
+    challengedOdds: 11.89,
+    matchDate: "2025-11-04",
+    completedAt: "2025-11-04"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Dew",
+    winner: "Tony",
+    challengerScore: 4,
+    challengedScore: 5,
+    challengerOdds: 10.62,
+    challengedOdds: 10.23,
+    matchDate: "2025-11-04",
+    completedAt: "2025-11-04"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Dew",
+    winner: "Tony",
+    challengerScore: 5,
+    challengedScore: 4,
+    challengerOdds: 18.31,
+    challengedOdds: 6.09,
+    matchDate: "2025-11-05",
+    completedAt: "2025-11-05"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Tone Andrei",
+    winner: "Tone Andrei",
+    challengerScore: 5,
+    challengedScore: 5,
+    challengerOdds: 18.31,
+    challengedOdds: 19.27,
+    matchDate: "2025-11-05",
+    completedAt: "2025-11-05"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Cezar",
+    winner: "Tony",
+    challengerScore: 5,
+    challengedScore: 3,
+    challengerOdds: 18.31,
+    challengedOdds: 4.00,
+    matchDate: "2025-11-05",
+    completedAt: "2025-11-05"
+  },
+  {
+    challenger: "Tony",
+    challenged: "mihai94",
+    winner: "Tony",
+    challengerScore: 5,
+    challengedScore: 3,
+    challengerOdds: 18.31,
+    challengedOdds: 4.00,
+    matchDate: "2025-11-05",
+    completedAt: "2025-11-05"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Dew",
+    winner: "Tony",
+    challengerScore: 8,
+    challengedScore: 9,
+    challengerOdds: 18.41,
+    challengedOdds: 17.40,
+    matchDate: "2025-11-06",
+    completedAt: "2025-11-06"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Tone Andrei",
+    winner: "Tony",
+    challengerScore: 8,
+    challengedScore: 8,
+    challengerOdds: 18.41,
+    challengedOdds: 14.74,
+    matchDate: "2025-11-06",
+    completedAt: "2025-11-06"
+  },
+  {
+    challenger: "Tony",
+    challenged: "Cezar",
+    winner: "Tony",
+    challengerScore: 8,
+    challengedScore: 7,
+    challengerOdds: 18.41,
+    challengedOdds: 13.20,
+    matchDate: "2025-11-06",
+    completedAt: "2025-11-06"
+  },
+  {
+    challenger: "Tony",
+    challenged: "mihai94",
+    winner: "Tony",
+    challengerScore: 8,
+    challengedScore: 7,
+    challengerOdds: 18.41,
+    challengedOdds: 11.73,
+    matchDate: "2025-11-06",
+    completedAt: "2025-11-06"
   }
 ];
 
@@ -1079,6 +1211,18 @@ const HISTORICAL_DATA = {
       "Flo": { rank: 4, points: 54.12, odds: 142.15, correct: 27, accuracy: 48, total: 56 },
       "Cezar": { rank: 5, points: 52.42, odds: 139.61, correct: 25, accuracy: 52, total: 56 },
       "Tony": { rank: 6, points: 39.47, odds: 176.99, correct: 18, accuracy: 32, total: 56 }
+    }
+  },
+  week10: {
+    name: "Săptămâna 10 (Nov 4-6)",
+    totalMatches: 36,
+    players: {
+      "Tony": { rank: 1, points: 47.34, odds: 118.32, correct: 17, accuracy: 47, total: 36 },
+      "Tone Andrei": { rank: 2, points: 44.24, odds: 91.06, correct: 18, accuracy: 50, total: 36 },
+      "Dew": { rank: 3, points: 33.72, odds: 79.68, correct: 18, accuracy: 50, total: 36 },
+      "Flo": { rank: 4, points: 33.29, odds: 82.22, correct: 17, accuracy: 47, total: 36 },
+      "Cezar": { rank: 5, points: 29.89, odds: 86.87, correct: 15, accuracy: 42, total: 36 },
+      "mihai94": { rank: 6, points: 22.74, odds: 81.96, correct: 14, accuracy: 39, total: 36 }
     }
   }
 };
