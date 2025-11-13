@@ -127,7 +127,7 @@ export default function Home() {
                   gap: '8px'
                 }}>
                   <span style={{ fontSize: '24px' }}>🏆</span>
-                  <span>GAMEWEEK 11</span>
+                  <span>GAMEWEEK 12</span>
                 </div>
               </div>
               <PredictionTable currentUser={currentUser} />
