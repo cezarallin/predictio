@@ -11,16 +11,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify user is admin
-    const user = await new Promise((resolve, reject) => {
-      try {
-        const result = getUserByName.get(adminUserId);
-        resolve(result);
-      } catch (error) {
-        reject(error);
-      }
-    });
-
-    if (!user || !(user as any).is_admin) {
+    const adminUser = getUserByName.get(adminUserId) as any;
+    if (!adminUser || !adminUser.is_admin) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
@@ -39,24 +31,39 @@ export async function POST(request: NextRequest) {
 
     console.log(`🗑️ Admin ${adminUserId} deleting user ${targetUser.name} (ID: ${targetUserId})...`);
 
-    // Delete all related data for this user
-    const deletePredictions = db.prepare('DELETE FROM predictions WHERE user_id = ?');
-    const deleteBoosts = db.prepare('DELETE FROM player_boosts WHERE user_id = ?');
-    const deleteReactions = db.prepare('DELETE FROM reactions WHERE user_id = ? OR target_user_id = ?');
-    const deleteSecondChances = db.prepare('DELETE FROM second_chances WHERE user_id = ?');
-    const deleteSuperSpins = db.prepare('DELETE FROM super_spins WHERE user_id = ?');
-    const deleteH2HChallenges = db.prepare('DELETE FROM h2h_challenges WHERE challenger_id = ? OR challenged_id = ?');
-    
-    deletePredictions.run(targetUserId);
-    deleteBoosts.run(targetUserId);
-    deleteReactions.run(targetUserId, targetUserId);
-    deleteSecondChances.run(targetUserId);
-    deleteSuperSpins.run(targetUserId);
-    deleteH2HChallenges.run(targetUserId, targetUserId);
-    
-    // Delete the user
-    const deleteUser = db.prepare('DELETE FROM users WHERE id = ?');
-    const result = deleteUser.run(targetUserId);
+    // Use a transaction to ensure all deletions happen atomically
+    const transaction = db.transaction(() => {
+      // Delete all related data for this user
+      const deletePredictions = db.prepare('DELETE FROM predictions WHERE user_id = ?');
+      const deleteBoosts = db.prepare('DELETE FROM player_boosts WHERE user_id = ?');
+      const deleteReactions = db.prepare('DELETE FROM reactions WHERE user_id = ? OR target_user_id = ?');
+      const deleteSecondChances = db.prepare('DELETE FROM second_chances WHERE user_id = ?');
+      const deleteSuperSpins = db.prepare('DELETE FROM super_spins WHERE user_id = ?');
+      const deleteH2HChallenges = db.prepare('DELETE FROM h2h_challenges WHERE challenger_id = ? OR challenged_id = ?');
+      
+      // Update/delete foreign key references before deleting user
+      // Update H2H winner to NULL (winner_id allows NULL)
+      const updateH2HWinner = db.prepare('UPDATE h2h_challenges SET winner_id = NULL WHERE winner_id = ?');
+      // Delete finalized gameweeks where user is winner (winner_id is NOT NULL)
+      const deleteFinalizedGameweeks = db.prepare('DELETE FROM finalized_gameweeks WHERE winner_id = ?');
+      
+      deletePredictions.run(targetUserId);
+      deleteBoosts.run(targetUserId);
+      deleteReactions.run(targetUserId, targetUserId);
+      deleteSecondChances.run(targetUserId);
+      deleteSuperSpins.run(targetUserId);
+      deleteH2HChallenges.run(targetUserId, targetUserId);
+      
+      // Update/delete winner references before deleting user
+      updateH2HWinner.run(targetUserId);
+      deleteFinalizedGameweeks.run(targetUserId);
+      
+      // Finally delete the user
+      const deleteUser = db.prepare('DELETE FROM users WHERE id = ?');
+      deleteUser.run(targetUserId);
+    });
+
+    transaction();
     
     console.log(`✅ Deleted user ${targetUser.name} (ID: ${targetUserId}) and all related data by admin ${adminUserId}`);
 
@@ -69,7 +76,8 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error deleting user:', error);
-    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+    return NextResponse.json({ error: `Failed to delete user: ${errorMessage}` }, { status: 500 });
   }
 }
 

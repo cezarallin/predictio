@@ -1235,6 +1235,17 @@ const HISTORICAL_DATA = {
       "mihai94": { rank: 4, points: 47.46, odds: 134.14, correct: 24, accuracy: 43, total: 56 },
       "Dew": { rank: 5, points: 38.66, odds: 138.93, correct: 20, accuracy: 36, total: 56 }
     }
+  },
+  week12: {
+    name: "Săptămâna 12 (Nov 20-25)",
+    totalMatches: 56,
+    players: {
+      "Cezar": { rank: 1, points: 73.24, odds: 161.28, correct: 27, accuracy: 48, total: 56 },
+      "Tony": { rank: 2, points: 52.76, odds: 191.81, correct: 19, accuracy: 34, total: 56 },
+      "Tone Andrei": { rank: 3, points: 49.21, odds: 151.42, correct: 22, accuracy: 39, total: 56 },
+      "mihai94": { rank: 4, points: 47.46, odds: 134.14, correct: 24, accuracy: 43, total: 56 },
+      "Dew": { rank: 5, points: 38.66, odds: 138.93, correct: 20, accuracy: 36, total: 56 }
+    }
   }
 };
 
