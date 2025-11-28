@@ -1258,6 +1258,17 @@ const HISTORICAL_DATA = {
       "Flo": { rank: 5, points: 53.02, odds: 147.27, correct: 24, accuracy: 43, total: 56 },
       "Dew": { rank: 6, points: 52.59, odds: 142.12, correct: 24, accuracy: 43, total: 56 }
     }
+  },
+  week14: {
+    name: "Săptămâna 14 (Nov 28-30)",
+    totalMatches: 36,
+    players: {
+      "mihai94": { rank: 1, points: 33.82, odds: 89.45, correct: 17, accuracy: 47, total: 36 },
+      "Tony": { rank: 2, points: 33.11, odds: 88.66, correct: 17, accuracy: 47, total: 36 },
+      "Tone Andrei": { rank: 3, points: 32.83, odds: 91.74, correct: 18, accuracy: 50, total: 36 },
+      "Cezar": { rank: 4, points: 29.99, odds: 92.15, correct: 16, accuracy: 44, total: 36 },
+      "Dew": { rank: 5, points: 24.78, odds: 80.51, correct: 16, accuracy: 44, total: 36 }
+    }
   }
 };
 
