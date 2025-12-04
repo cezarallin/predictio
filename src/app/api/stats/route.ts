@@ -1269,6 +1269,17 @@ const HISTORICAL_DATA = {
       "Cezar": { rank: 4, points: 29.99, odds: 92.15, correct: 16, accuracy: 44, total: 36 },
       "Dew": { rank: 5, points: 24.78, odds: 80.51, correct: 16, accuracy: 44, total: 36 }
     }
+  },
+  week15: {
+    name: "Săptămâna 15 (Dec 5-8)",
+    totalMatches: 56,
+    players: {
+      "Tony": { rank: 1, points: 64.30, odds: 136.92, correct: 30, accuracy: 54, total: 56 },
+      "mihai94": { rank: 2, points: 63.80, odds: 137.78, correct: 30, accuracy: 54, total: 56 },
+      "Dew": { rank: 3, points: 57.27, odds: 123.57, correct: 29, accuracy: 52, total: 56 },
+      "Cezar": { rank: 4, points: 54.20, odds: 142.13, correct: 26, accuracy: 46, total: 56 },
+      "Tone Andrei": { rank: 5, points: 41.57, odds: 128.97, correct: 24, accuracy: 43, total: 56 }
+    }
   }
 };
 
