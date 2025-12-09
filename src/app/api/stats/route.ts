@@ -1280,6 +1280,18 @@ const HISTORICAL_DATA = {
       "Cezar": { rank: 4, points: 54.20, odds: 142.13, correct: 26, accuracy: 46, total: 56 },
       "Tone Andrei": { rank: 5, points: 41.57, odds: 128.97, correct: 24, accuracy: 43, total: 56 }
     }
+  },
+  week16: {
+    name: "Săptămâna 16 (Dec 9-11)",
+    totalMatches: 56,
+    players: {
+      "Tone Andrei": { rank: 1, points: 59.28, odds: 152.66, correct: 24, accuracy: 43, total: 56 },
+      "mihai94": { rank: 2, points: 54.52, odds: 136.81, correct: 26, accuracy: 46, total: 56 },
+      "Flo": { rank: 3, points: 45.38, odds: 154.88, correct: 19, accuracy: 34, total: 56 },
+      "Dew": { rank: 4, points: 42.54, odds: 135.51, correct: 21, accuracy: 38, total: 56 },
+      "Cezar": { rank: 5, points: 42.15, odds: 142.23, correct: 21, accuracy: 38, total: 56 },
+      "Tony": { rank: 6, points: 38.66, odds: 154.63, correct: 18, accuracy: 32, total: 56 }
+    }
   }
 };
 
