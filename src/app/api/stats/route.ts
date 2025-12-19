@@ -1303,6 +1303,17 @@ const HISTORICAL_DATA = {
       "Cezar": { rank: 4, points: 35.18, odds: 88.49, correct: 19, accuracy: 53, total: 36 },
       "mihai94": { rank: 5, points: 29.59, odds: 87.11, correct: 16, accuracy: 44, total: 36 }
     }
+  },
+  week18: {
+    name: "Săptămâna 18 (Dec 19-22)",
+    totalMatches: 56,
+    players: {
+      "mihai94": { rank: 1, points: 66.50, odds: 134.02, correct: 32, accuracy: 57, total: 56 },
+      "Tony": { rank: 2, points: 63.00, odds: 155.13, correct: 29, accuracy: 52, total: 56 },
+      "Tone Andrei": { rank: 3, points: 61.47, odds: 124.60, correct: 31, accuracy: 55, total: 56 },
+      "Dew": { rank: 4, points: 56.74, odds: 125.64, correct: 31, accuracy: 55, total: 56 },
+      "Cezar": { rank: 5, points: 54.32, odds: 119.12, correct: 30, accuracy: 54, total: 56 }
+    }
   }
 };
 
